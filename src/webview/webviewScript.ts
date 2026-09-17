@@ -111,35 +111,11 @@ export function getWebviewScript(): string {
         }
 
         for (const workspace of state.workspaces) {
-          if (!workspace.workspaceName) {
-            // Empty workspace placeholder
-            if (workspace.infoMessage) {
-              rows.push(
-                '<div class="info-row" data-depth="0">' +
-                '<span class="codicon codicon-info"></span>' +
-                '<span>' + escapeHtml(workspace.infoMessage) + '</span>' +
-                '</div>'
-              );
-            }
-            continue;
-          }
-
-          const wsExpanded = state.expandedWorkspaces.includes(workspace.workspaceUri);
-          rows.push(
-            '<div class="tree-row" data-depth="0" data-type="workspace" data-uri="' + escapeHtml(workspace.workspaceUri) + '" title="' + escapeHtml(workspace.workspaceUri) + '">' +
-            '<span class="twistie ' + (wsExpanded ? 'expanded' : 'collapsed') + '"></span>' +
-            '<span class="tree-icon"><span class="codicon codicon-folder"></span></span>' +
-            '<span class="tree-label">' + escapeHtml(workspace.workspaceName) + '</span>' +
-            '</div>'
-          );
-
-          if (!wsExpanded) {
-            continue;
-          }
-
+          // No per-folder header: sessions from every open folder render as
+          // one flat, chronologically sorted list.
           if (workspace.infoMessage && workspace.sessions.length === 0) {
             rows.push(
-              '<div class="info-row" data-depth="1">' +
+              '<div class="info-row" data-depth="0">' +
               '<span class="codicon codicon-info"></span>' +
               '<span>' + escapeHtml(workspace.infoMessage) + '</span>' +
               '</div>'
@@ -148,7 +124,7 @@ export function getWebviewScript(): string {
           }
 
           for (const session of workspace.sessions) {
-            const sessionExpanded = state.expandedSessions.includes(session.sessionId);
+            const sessionExpanded = false; // sem lista de mensagens por sessão
             const isChecked = state.checkedSessionIds.includes(session.sessionId);
             const isRenaming = renamingSessionId === session.sessionId;
 
@@ -169,19 +145,16 @@ export function getWebviewScript(): string {
 
             const hoverActions = isRenaming ? '' :
               '<span class="hover-actions">' +
-              '<button class="action-btn" data-action="viewSession" data-session-id="' + escapeHtml(session.sessionId) + '" title="View Session" aria-label="View Session"><span class="codicon codicon-eye"></span></button>' +
-              '<button class="action-btn" data-action="openSession" data-session-id="' + escapeHtml(session.sessionId) + '" title="Open Session"><img src="' + (container.dataset.terminalGreenUri || '') + '" /></button>' +
-              '<button class="action-btn" data-action="openSessionDangerously" data-session-id="' + escapeHtml(session.sessionId) + '" title="Open Session (Skip Permissions)"><img src="' + (container.dataset.terminalRedUri || '') + '" /></button>' +
               '<button class="action-btn" data-action="startRename" data-session-id="' + escapeHtml(session.sessionId) + '" title="Rename"><span class="codicon codicon-edit"></span></button>' +
               '<button class="action-btn" data-action="deleteSession" data-session-id="' + escapeHtml(session.sessionId) + '" title="Delete"><span class="codicon codicon-trash"></span></button>' +
               '</span>';
 
             rows.push(
               '<div class="tree-row' + (focusedIndex === rows.length ? ' focused' : '') + '" ' +
-              'data-depth="1" data-type="session" data-session-id="' + escapeHtml(session.sessionId) + '" ' +
-              'data-tooltip="' + escapeHtml(session.tooltip) + '">' +
-              '<span class="twistie ' + (sessionExpanded ? 'expanded' : 'collapsed') + '"></span>' +
+              'data-depth="0" data-type="session" data-session-id="' + escapeHtml(session.sessionId) + '" ' +
+              '>' +
               checkboxHtml +
+              (session.live ? '<span class="live-dot ' + session.live + '" title="Terminal aberto (' + session.live + ')"></span>' : '') +
               labelHtml +
               (isRenaming ? '' : '<span class="tree-description">' + escapeHtml(session.description) + '</span>') +
               hoverActions +
@@ -207,7 +180,7 @@ export function getWebviewScript(): string {
                   (prompt.promptRaw && prompt.promptRaw.length > 300 ? '...' : '');
 
                 rows.push(
-                  '<div class="tree-row" data-depth="2" data-type="prompt" ' +
+                  '<div class="tree-row" data-depth="1" data-type="prompt" ' +
                   'data-prompt-id="' + escapeHtml(prompt.promptId) + '" ' +
                   'data-session-id="' + escapeHtml(prompt.sessionId) + '" ' +
                   'data-tooltip="' + escapeHtml(promptTooltip) + '"' +

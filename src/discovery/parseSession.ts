@@ -18,6 +18,7 @@ export async function parseTranscriptFile(
   let firstPromptRaw: string | undefined;
   let firstUserRaw: string | undefined;
   let latestExplicitTitle: string | undefined;
+  let latestAiTitle: string | undefined;
 
   try {
     for await (const line of rl) {
@@ -59,6 +60,14 @@ export async function parseTranscriptFile(
         }
       }
 
+      // nome que o próprio Claude Code dá ao chat (aparece no /resume); vale menos que /rename
+      if (parsed.type === "ai-title") {
+        const aiTitle = toNonEmptySingleLine(parsed.aiTitle);
+        if (aiTitle) {
+          latestAiTitle = aiTitle;
+        }
+      }
+
       if (parsed.type === "user" && parsed.message?.role === "user") {
         const text = extractText(parsed.message.content);
         if (text.trim()) {
@@ -85,7 +94,7 @@ export async function parseTranscriptFile(
     cwd,
     titleSourceRaw:
       chooseSessionTitleRaw({
-        latestExplicitTitle,
+        latestExplicitTitle: latestExplicitTitle ?? latestAiTitle,
         firstPromptRaw,
         firstUserRaw
       }) ?? ""

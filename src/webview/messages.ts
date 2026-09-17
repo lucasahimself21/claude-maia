@@ -20,6 +20,8 @@ export interface WebviewSessionItem {
   readonly transcriptPath: string;
   readonly cwd: string;
   readonly updatedAt: number;
+  readonly lastUsed: number;
+  readonly live?: "busy" | "idle";
   readonly prompts?: WebviewPromptItem[];
 }
 

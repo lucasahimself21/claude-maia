@@ -1,5 +1,8 @@
+import * as os from "os";
+import * as path from "path";
 import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "./discovery";
+import { markShellClosed, readLiveSessions, shellPidOf, SESSIONS_DIR } from "./liveSessions";
 import { ClaudeTerminalService } from "./terminal";
 import { SessionTreeStateManager, SessionTreeViewProvider } from "./webview";
 import { SessionNode, SessionPromptNode } from "./models";
@@ -284,6 +287,105 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await stateManager.refresh();
     })
   );
+
+  // Auto-refresh: watch ~/.claude/projects for new/changed session transcripts (debounced)
+  {
+    const home = os.homedir();
+    const pattern = new vscode.RelativePattern(vscode.Uri.file(path.join(home, ".claude", "projects")), "**/*.jsonl");
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        hasRefreshed = true;
+        await stateManager.refresh();
+      }, 300);
+    };
+    watcher.onDidCreate(schedule);
+    watcher.onDidChange(schedule);
+    watcher.onDidDelete(schedule);
+    context.subscriptions.push(watcher);
+
+    // ~/.claude/sessions/<pid>.json muda a cada interação (status/updatedAt): só re-renderiza (rápido)
+    let liveTimer: ReturnType<typeof setTimeout>;
+    const notifyLive = () => {
+      clearTimeout(liveTimer);
+      liveTimer = setTimeout(() => stateManager.notifyLive(), 300);
+    };
+    const liveWatcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(vscode.Uri.file(SESSIONS_DIR), "*.json")
+    );
+    liveWatcher.onDidCreate(notifyLive);
+    liveWatcher.onDidChange(notifyLive);
+    liveWatcher.onDidDelete(notifyLive);
+    context.subscriptions.push(liveWatcher);
+
+    // pid do shell de cada terminal, pra saber qual claude morreu quando um terminal fecha
+    const shellPids = new Map<vscode.Terminal, number>();
+    const track = (t: vscode.Terminal) =>
+      void t.processId.then((pid) => {
+        if (pid) {
+          shellPids.set(t, pid);
+        }
+      });
+    vscode.window.terminals.forEach(track);
+    context.subscriptions.push(vscode.window.onDidOpenTerminal(track));
+
+    // enquanto a sessão roda, resolve o shell dela em background (cache) pra o fechamento ser instantâneo
+    const mapLive = () => {
+      const known = new Set(shellPids.values());
+      for (const info of readLiveSessions().values()) {
+        shellPidOf(info.pid, known);
+      }
+    };
+    setTimeout(mapLive, 3000);
+    const mapTick = setInterval(mapLive, 10000);
+    context.subscriptions.push({ dispose: () => clearInterval(mapTick) });
+
+    // aba do terminal = nome da sessão na lista (renomeia quando divergir e confere o resultado)
+    let syncing = false;
+    const syncTerminalNames = async () => {
+      if (syncing) {
+        return;
+      }
+      syncing = true;
+      try {
+        const known = new Set(shellPids.values());
+        for (const [sessionId, info] of readLiveSessions()) {
+          const session = stateManager.getSessionById(sessionId);
+          if (!session) {
+            continue;
+          }
+          const shell = shellPidOf(info.pid, known);
+          const terminal = shell ? [...shellPids.entries()].find(([, p]) => p === shell)?.[0] : undefined;
+          if (!terminal || terminal.name === session.title) {
+            continue;
+          }
+          terminal.show(true);
+          await vscode.commands.executeCommand("workbench.action.terminal.renameWithArg", { name: session.title });
+          outputChannel.appendLine(
+            `[title] ${sessionId.slice(0, 8)}: "${terminal.name}" -> "${session.title}" ${terminal.name === session.title ? "ok" : "FALHOU"}`
+          );
+        }
+      } finally {
+        syncing = false;
+      }
+    };
+    context.subscriptions.push(stateManager.onDidChangeState(() => void syncTerminalNames()));
+    setTimeout(() => void syncTerminalNames(), 4000);
+
+    context.subscriptions.push(
+      vscode.window.onDidCloseTerminal((t) => {
+        const pid = shellPids.get(t);
+        shellPids.delete(t);
+        if (pid) {
+          markShellClosed(pid);
+        }
+        stateManager.notifyLive();
+        setTimeout(() => stateManager.notifyLive(), 1500);
+      })
+    );
+  }
 }
 
 export function deactivate(): void {

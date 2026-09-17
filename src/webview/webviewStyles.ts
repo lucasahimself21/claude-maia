@@ -144,6 +144,25 @@ export function getWebviewStyles(): string {
       white-space: nowrap;
     }
 
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #8fd694;
+      margin-right: 6px;
+      flex-shrink: 0;
+      box-shadow: 0 0 4px #8fd694;
+    }
+
+    .live-dot.busy {
+      animation: live-pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes live-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
     .hover-actions {
       display: none;
       align-items: center;

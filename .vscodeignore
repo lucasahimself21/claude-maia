@@ -1,5 +1,6 @@
 .vscode/**
 .vscode-test/**
+.old-extension-backup/**
 src/**
 .eslintrc.json
 .gitignore

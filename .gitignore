@@ -4,3 +4,4 @@ node_modules
 *.vsix
 coverage
 .claude/settings.local.json
+.old-extension-backup

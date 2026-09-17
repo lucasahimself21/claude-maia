@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { readLiveSessions } from "../liveSessions";
 import { SessionNode } from "../models";
 import { ISessionDiscoveryService, SessionPrompt } from "../discovery/types";
 import { formatAgeToken, truncateForTreeLabel, findHighlightRanges } from "../utils/formatting";
@@ -28,6 +29,11 @@ export class SessionTreeStateManager {
 
   public getFilterQuery(): string | undefined {
     return this.filterQuery;
+  }
+
+  /** Re-renderiza com o estado atual (bolinha/tempo) sem reler os transcripts. */
+  public notifyLive(): void {
+    this._onDidChangeState.fire();
   }
 
   public async refresh(): Promise<void> {
@@ -150,15 +156,29 @@ export class SessionTreeStateManager {
     const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
     const workspaces: WebviewWorkspaceGroup[] = [];
 
-    for (const folder of workspaceFolders) {
-      const uri = folder.uri.toString();
-      let sessions = this.sessionsByWorkspace.get(uri) ?? [];
+    if (workspaceFolders.length > 0) {
+      // Flatten sessions from every open folder into a single, chronologically
+      // sorted list instead of one group per folder: a session already has
+      // access to the whole workspace, so splitting by folder added a
+      // distinction without a difference.
+      let sessions: SessionNode[] = [];
+      const seenSessionIds = new Set<string>();
+      for (const folder of workspaceFolders) {
+        for (const session of this.sessionsByWorkspace.get(folder.uri.toString()) ?? []) {
+          if (!seenSessionIds.has(session.sessionId)) {
+            seenSessionIds.add(session.sessionId);
+            sessions.push(session);
+          }
+        }
+      }
+      sessions.sort((a, b) => b.updatedAt - a.updatedAt);
+
       let infoMessage: string | undefined;
 
       if (this.filteredSessionIds !== undefined) {
         sessions = sessions.filter((s) => this.filteredSessionIds!.has(s.sessionId));
         if (sessions.length === 0) {
-          infoMessage = "No matches in this folder.";
+          infoMessage = "No matches.";
         }
       } else if (sessions.length === 0) {
         if (!this.hasLoaded) {
@@ -166,10 +186,11 @@ export class SessionTreeStateManager {
         } else if (this.globalInfoMessage) {
           infoMessage = this.globalInfoMessage;
         } else {
-          infoMessage = "No Claude sessions found for this folder.";
+          infoMessage = undefined; // sem sessão fica vazio
         }
       }
 
+      const liveSessions = readLiveSessions();
       const sessionItems: WebviewSessionItem[] = [];
       for (const session of sessions) {
         const prompts = await this.getPromptsForSession(session);
@@ -205,29 +226,46 @@ export class SessionTreeStateManager {
           };
         });
 
+        const live = liveSessions.get(session.sessionId);
+        const lastUsed = Math.max(session.updatedAt, live?.updatedAt ?? 0);
+
         sessionItems.push({
           sessionId: session.sessionId,
           title: session.title,
-          description: formatAgeToken(session.updatedAt),
+          live: live ? (live.status === "busy" ? "busy" : "idle") : undefined,
+          description: formatAgeToken(lastUsed),
           tooltip: [
             `Session: ${session.sessionId}`,
             `Title: ${session.title}`,
-            `Last used: ${new Date(session.updatedAt).toLocaleString()}`,
+            live ? `Open in terminal (pid ${String(live.pid)}, ${live.status ?? "idle"})` : "Not running",
+            `Last used: ${new Date(lastUsed).toLocaleString()}`,
             `CWD: ${session.cwd}`,
             `Transcript: ${session.transcriptPath}`
           ].join("\n"),
           transcriptPath: session.transcriptPath,
           cwd: session.cwd,
           updatedAt: session.updatedAt,
+          lastUsed,
           prompts: this.expandedSessions.has(session.sessionId) ? promptItems : undefined
         });
       }
 
+      // sessão com terminal aberto (busy ou idle) sempre no topo; fechada
+      // não sobe mais que ela mesmo tendo interação mais recente
+      sessionItems.sort((a, b) => {
+        const aLive = a.live !== undefined ? 1 : 0;
+        const bLive = b.live !== undefined ? 1 : 0;
+        if (aLive !== bLive) {
+          return bLive - aLive;
+        }
+        return b.lastUsed - a.lastUsed;
+      });
+
       workspaces.push({
-        workspaceUri: uri,
-        workspaceName: folder.name,
+        workspaceUri: "",
+        workspaceName: "",
         sessions: sessionItems,
-        infoMessage: sessions.length === 0 ? infoMessage : undefined
+        infoMessage: sessionItems.length === 0 ? infoMessage : undefined
       });
     }
 

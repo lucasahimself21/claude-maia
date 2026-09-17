@@ -43,6 +43,7 @@ export interface TranscriptRecord {
   readonly uuid?: string;
   readonly customTitle?: string;
   readonly agentName?: string;
+  readonly aiTitle?: string;
   readonly message?: {
     readonly role?: string;
     readonly content?: unknown;

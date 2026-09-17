@@ -1,8 +1,8 @@
 import { execFile, exec } from "child_process";
 import { promisify } from "util";
 import * as vscode from "vscode";
+import { findTerminalForPid, readLiveSessions } from "./liveSessions";
 import { SessionNode } from "./models";
-import { truncateForTreeLabel } from "./utils/formatting";
 
 const execFileAsync = promisify(execFile);
 const execAsync = promisify(exec);
@@ -118,8 +118,26 @@ export class ClaudeTerminalService {
       return;
     }
 
+    // Sessão já rodando: foca o terminal dela em vez de abrir outro claude
+    const live = readLiveSessions().get(session.sessionId);
+    if (live) {
+      const existing = await findTerminalForPid(vscode.window.terminals, live.pid);
+      if (existing) {
+        this.outputChannel.appendLine(
+          `[terminal] Session ${session.sessionId} already running (pid ${String(live.pid)}), focusing terminal.`
+        );
+        existing.show(false);
+        return;
+      }
+      this.outputChannel.appendLine(
+        `[terminal] Session ${session.sessionId} running (pid ${String(live.pid)}) but no terminal found in this window.`
+      );
+      vscode.window.showInformationMessage("Essa sessão já está aberta em outra janela do VS Code.");
+      return;
+    }
+
+    // sem "name": a aba segue o título que o próprio claude manda (nome do chat, acompanha /rename)
     const terminal = vscode.window.createTerminal({
-      name: truncateForTreeLabel(session.title, 35),
       cwd: session.cwd,
       location: {
         viewColumn: vscode.ViewColumn.Active
@@ -143,7 +161,16 @@ export class ClaudeTerminalService {
     );
   }
 
+  private claudeFound: boolean | undefined;
+
   private async hasClaudeBinary(): Promise<boolean> {
+    if (this.claudeFound === undefined) {
+      this.claudeFound = await this.checkClaudeBinary();
+    }
+    return this.claudeFound;
+  }
+
+  private async checkClaudeBinary(): Promise<boolean> {
     const checker = process.platform === "win32" ? "where" : "which";
 
     try {
