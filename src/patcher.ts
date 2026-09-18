@@ -15,6 +15,7 @@ export interface Patch {
     | "contextFullWindow"
     | "usageFromChat"
     | "openChrome"
+    | "restartChromeOnError"
     | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "extension.js";
@@ -74,6 +75,17 @@ export const PATCHES: readonly Patch[] = [
     replace:
       'async ensureChromeMcpEnabled($1){/*claude-maia-chrome*/try{const cp=require("child_process"),pl=process.platform,running=()=>{try{if(pl==="darwin")return cp.execSync("pgrep -x \'Google Chrome\'",{stdio:"pipe"}).toString().trim()!=="";if(pl==="win32")return cp.execSync("tasklist /NH",{stdio:"pipe"}).toString().toLowerCase().includes("chrome.exe");return cp.execSync("pgrep -x chrome || pgrep -x google-chrome || pgrep -x chromium",{stdio:"pipe"}).toString().trim()!==""}catch(_){return false}};if(!running()){if(pl==="darwin")cp.execSync("open -a \'Google Chrome\'");else if(pl==="win32")cp.execSync("start chrome",{shell:"cmd.exe"});else cp.spawn("google-chrome",[],{detached:true,stdio:"ignore"}).unref();await new Promise(r=>setTimeout(r,3500))}}catch(_){}if(process.platform==="darwin"||process.platform==="win32"||process.platform==="linux"){',
     marker: "/*claude-maia-chrome*/"
+  },
+  {
+    id: "restartChromeOnError",
+    title: 'se o chat receber "Browser extension is not connected", fecha e abre o Chrome sozinho (1x por minuto)',
+    file: "extension.js",
+    // mesmo ponto por onde passam as mensagens do CLI (o que vem antes do rate_limit_event)
+    find: /this\.send\(\{type:"io_message",channelId:([\w$]+),message:([\w$]+),done:!1\}\),(?=\2\.type==="rate_limit_event")/,
+    replace:
+      '(function(m){try{if(JSON.stringify(m).includes("Browser extension is not connected")){var g=globalThis;if(!g.__maiaChromeAt||Date.now()-g.__maiaChromeAt>60000){g.__maiaChromeAt=Date.now();var cp=require("child_process"),pl=process.platform;setTimeout(function(){try{if(pl==="darwin"){try{cp.execSync("osascript -e \'quit app \\"Google Chrome\\"\'",{stdio:"pipe"})}catch(_){}setTimeout(function(){try{cp.execSync("open -a \'Google Chrome\'")}catch(_){}},2500)}else if(pl==="win32"){try{cp.execSync("taskkill /IM chrome.exe /F",{stdio:"pipe"})}catch(_){}setTimeout(function(){try{cp.execSync("start chrome",{shell:"cmd.exe"})}catch(_){}},2500)}else{try{cp.execSync("pkill -x chrome || pkill -x google-chrome || true",{stdio:"pipe"})}catch(_){}setTimeout(function(){try{cp.spawn("google-chrome",[],{detached:true,stdio:"ignore"}).unref()}catch(_){}},2500)}}catch(_){}},0)}}}catch(_){}})($2)/*claude-maia-restart*/,' +
+      'this.send({type:"io_message",channelId:$1,message:$2,done:!1}),',
+    marker: "/*claude-maia-restart*/"
   },
   {
     id: "hideSessionManager",

@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -198,6 +198,11 @@
           "type": "boolean",
           "default": true,
           "description": "Patch: antes de conectar o navegador, abre o Chrome se ele não estiver rodando (Mac, Windows, Linux)."
+        },
+        "claudeMaia.patch.restartChromeOnError": {
+          "type": "boolean",
+          "default": true,
+          "description": "Patch: quando o chat recebe \"Browser extension is not connected\", fecha e abre o Chrome sozinho (no máximo 1x por minuto); é só mandar a mensagem de novo."
         }
       }
     }
