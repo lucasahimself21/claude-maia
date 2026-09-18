@@ -16,7 +16,7 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
 
 **Atualizar**: a extensão confere o GitHub Releases ao abrir, sempre que a view "Claude Maia" aparece (no máximo 1 vez a cada 2 min) e a cada 6 h; quando tem versão nova aparece um botão "Atualizar Claude Maia pra vX" no rodapé da view (e um aviso). Clicou, baixa e instala sozinha e o botão vira "Recarregar pra ativar vX". Comando manual: "Claude Maia: procurar atualização". Se o chat disser "Browser extension is not connected", o comando "Claude Maia: reiniciar o Chrome" fecha e abre o Chrome (o Claude Code também sabe fazer isso sozinho, pelo CLAUDE.md).
 
-**Desenvolver**: `npm install && npm run compile && npx @vscode/vsce package`. Publicar: `gh release create v<versão> claude-maia-<versão>.vsix --title v<versão> --notes "..."`.
+**Desenvolver**: `npm install && npm run compile && npx @vscode/vsce package`. Testes: `npm test` (baixa um VS Code de teste; rodando de dentro do chat da extensão Claude Code, use `env -u ELECTRON_RUN_AS_NODE npm test`, senão o VS Code de teste sobe como Node puro e rejeita as opções). Publicar: `gh release create v<versão> claude-maia-<versão>.vsix --title v<versão> --notes "..."`.
 
 ---
 
