@@ -21,13 +21,12 @@ export interface Patch {
 export const PATCHES: readonly Patch[] = [
   {
     id: "autoBrowser",
-    title: "navegador (Claude in Chrome) liga sozinho quando a mensagem fala de site/chrome/página",
+    title: "navegador (Claude in Chrome) conecta sozinho em toda mensagem (equivale ao @browser)",
     file: "webview/index.js",
     find: "let z=Y?.expandMentions!==!1,q=await LT1($,J,G,",
     replace:
-      'let z=Y?.expandMentions!==!1;if(z&&(this.config?.value?.browserIntegrationSupported??!1)&&this.chromeMcpState?.value?.status==="disconnected"&&/(chrome|navegador|browser|\bsites?\b|\babr[aeir]|\bacess|\bentr[ae]\b|\blog(in|ar)\b|\bprint|screenshot|p[áa]gina|\burl\b|https?:|www\.|\.com\b|\.br\b|\bgoogle\b|instagram|facebook|\bmeta\b|utmify|lowify|pagarfy|trackfy|mundpay|producer|flowmusic)/i.test(String($))){try{await this.ensureChromeMcpEnabled()}catch(_){}}let q=await LT1($,J,G,',
-    marker:
-      "utmify|lowify|pagarfy|trackfy|mundpay|producer|flowmusic)/i.test(String($))){try{await this.ensureChromeMcpEnabled()}"
+      'let z=Y?.expandMentions!==!1;if(z&&(this.config?.value?.browserIntegrationSupported??!1)&&this.chromeMcpState?.value?.status==="disconnected"){try{await this.ensureChromeMcpEnabled()}catch(_){}}let q=await LT1($,J,G,',
+    marker: 'this.chromeMcpState?.value?.status==="disconnected"){try{await this.ensureChromeMcpEnabled()}'
   },
   {
     id: "contextInChat",
