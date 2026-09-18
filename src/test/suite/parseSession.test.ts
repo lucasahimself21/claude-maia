@@ -91,6 +91,8 @@ describe("parseTranscriptFile", () => {
     assert.ok(result !== null);
     assert.strictEqual(result.sessionId, "sess-titles-001");
     assert.strictEqual(result.titleSourceRaw, "Final Renamed Title");
+    // agent-name e ai-title repetidos depois do custom-title não sobrescrevem
+    assert.ok(result.titleHistory.includes("Old Agent Name"));
   });
 
   it("picks the first sessionId encountered in a file with multiple session records", async () => {

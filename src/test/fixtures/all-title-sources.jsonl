@@ -2,3 +2,5 @@
 {"type":"user","sessionId":"sess-titles-001","uuid":"prompt-1","timestamp":"2025-06-01T10:00:00Z","message":{"role":"user","content":"Initial user prompt"}}
 {"type":"custom-title","sessionId":"sess-titles-001","customTitle":"Custom Title Set Early"}
 {"type":"custom-title","sessionId":"sess-titles-001","customTitle":"Final Renamed Title"}
+{"type":"ai-title","sessionId":"sess-titles-001","aiTitle":"Ai title"}
+{"type":"agent-name","sessionId":"sess-titles-001","agentName":"Old Agent Name"}

@@ -19,6 +19,7 @@ export async function parseTranscriptFile(
   let firstUserRaw: string | undefined;
   let latestExplicitTitle: string | undefined;
   let latestAiTitle: string | undefined;
+  let latestAgentName: string | undefined;
   const titleHistory: string[] = [];
 
   try {
@@ -55,10 +56,13 @@ export async function parseTranscriptFile(
         }
       }
 
+      // o Claude Code repete o agent-name (nome antigo) a cada resposta, depois do custom-title;
+      // a aba do chat usa o custom-title, então ele só vale quando não há nenhum
       if (parsed.type === "agent-name") {
         const agentName = toNonEmptySingleLine(parsed.agentName);
         if (agentName) {
-          latestExplicitTitle = agentName;
+          latestAgentName = agentName;
+          titleHistory.push(agentName);
         }
       }
 
@@ -97,7 +101,7 @@ export async function parseTranscriptFile(
     cwd,
     titleSourceRaw:
       chooseSessionTitleRaw({
-        latestExplicitTitle: latestExplicitTitle ?? latestAiTitle,
+        latestExplicitTitle: latestExplicitTitle ?? latestAgentName ?? latestAiTitle,
         firstPromptRaw,
         firstUserRaw
       }) ?? "",
