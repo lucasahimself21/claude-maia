@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { readLiveSessions } from "../liveSessions";
+import { readIdeTabTitles, readLiveSessions } from "../liveSessions";
 
 const IDE_BUSY_WINDOW_MS = 6000;
 import { SessionNode } from "../models";
@@ -226,6 +226,7 @@ export class SessionTreeStateManager {
       }
 
       const liveSessions = readLiveSessions();
+      const ideTabs = readIdeTabTitles();
       const sessionItems: WebviewSessionItem[] = [];
       for (const session of sessions) {
         const prompts = await this.getPromptsForSession(session);
@@ -261,7 +262,13 @@ export class SessionTreeStateManager {
           };
         });
 
-        const live = liveSessions.get(session.sessionId);
+        let live = liveSessions.get(session.sessionId);
+        // aba do chat aberta = viva na IDE (instantâneo; o processo pode demorar a aparecer/sumir)
+        if (!live && ideTabs.has(session.title)) {
+          live = { pid: 0, updatedAt: 0, source: "ide" };
+        } else if (live?.source === "ide" && !ideTabs.has(session.title) && live.pid > 0) {
+          live = undefined; // aba fechada, processo ainda morrendo
+        }
         const lastUsed = Math.max(session.updatedAt, live?.updatedAt ?? 0);
         // IDE não publica busy/idle: transcript mudando nos últimos segundos = respondendo
         const ideBusy = live?.source === "ide" && Date.now() - session.updatedAt < IDE_BUSY_WINDOW_MS;

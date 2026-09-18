@@ -2,7 +2,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "./discovery";
-import { markShellClosed, readLiveSessions, shellPidOf, SESSIONS_DIR } from "./liveSessions";
+import { invalidateIdeCache, markShellClosed, readLiveSessions, shellPidOf, SESSIONS_DIR } from "./liveSessions";
 import { setupAutoPatch } from "./patcher";
 import { setupUpdater } from "./updater";
 import { setupUsageBar } from "./usageBar";
@@ -393,7 +393,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       stateManager.setActiveSession(activeId);
     };
     context.subscriptions.push(vscode.window.onDidChangeActiveTerminal(updateActive));
-    context.subscriptions.push(vscode.window.tabGroups.onDidChangeTabs(() => updateActive()));
+    context.subscriptions.push(
+      vscode.window.tabGroups.onDidChangeTabs(() => {
+        invalidateIdeCache();
+        stateManager.notifyLive();
+        updateActive();
+        setTimeout(() => stateManager.notifyLive(), 1500);
+      })
+    );
     const activeTick = setInterval(updateActive, 2000);
     context.subscriptions.push({ dispose: () => clearInterval(activeTick) });
 

@@ -89,6 +89,24 @@ function pidAlive(pid: number): boolean {
 }
 
 /** Map sessionId -> { pid, status, updatedAt } só para processos vivos. */
+/** Títulos das abas de chat da extensão Claude Code abertas nesta janela (a aba leva o título da sessão). */
+export function readIdeTabTitles(): Set<string> {
+  const titles = new Set<string>();
+  for (const group of vscode.window.tabGroups.all) {
+    for (const tab of group.tabs) {
+      const input = tab.input;
+      if (input instanceof vscode.TabInputWebview && /claude/i.test(input.viewType)) {
+        titles.add(tab.label);
+      }
+    }
+  }
+  return titles;
+}
+
+export function invalidateIdeCache(): void {
+  ideCache = undefined;
+}
+
 export function readLiveSessions(): Map<string, LiveSessionInfo> {
   const live = new Map<string, LiveSessionInfo>();
   let files: string[] = [];
