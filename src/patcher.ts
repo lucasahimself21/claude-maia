@@ -9,7 +9,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 export interface Patch {
-  readonly id: "autoBrowser" | "contextInChat" | "contextFullWindow" | "hideSessionManager";
+  readonly id: "autoBrowser" | "contextInChat" | "contextFullWindow" | "usageFromChat" | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "extension.js";
   readonly find: string | RegExp;
@@ -45,6 +45,15 @@ export const PATCHES: readonly Patch[] = [
     find: "contextWindow:$.usageData.value.contextWindow-$.usageData.value.maxOutputTokens-13000,",
     replace: "contextWindow:$.usageData.value.contextWindow/*claude-maia*/,",
     marker: "contextWindow:$.usageData.value.contextWindow/*claude-maia*/,"
+  },
+  {
+    id: "usageFromChat",
+    title: "grava o uso do plano (5h/7d) que chega com cada resposta, pra barra não precisar consultar a API",
+    file: "extension.js",
+    find: "this.onRateLimitWindows(o.rate_limit_info.unifiedWindows)",
+    replace:
+      'this.onRateLimitWindows(o.rate_limit_info.unifiedWindows);try{require("fs").writeFileSync(require("path").join(require("os").homedir(),".claude","claude-maia-usage.json"),JSON.stringify({at:Date.now(),windows:o.rate_limit_info.unifiedWindows}))}catch(_){}/*claude-maia-usage*/',
+    marker: "/*claude-maia-usage*/"
   },
   {
     id: "hideSessionManager",

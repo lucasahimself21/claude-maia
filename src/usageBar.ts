@@ -2,7 +2,14 @@
 //   5h 32%/40% (2h51m)  |  7d 46%/57% (3h11m)  = usado/cota do tempo já passado na janela (reset em)
 // Verde enquanto o uso está abaixo da cota, amarelo quando passou. Token OAuth do Claude Code no Keychain.
 import { execFile } from "child_process";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import * as vscode from "vscode";
+
+// escrito pelo patch "usageFromChat" na extensão Claude Code a cada resposta do chat
+const USAGE_FILE = path.join(os.homedir(), ".claude", "claude-maia-usage.json");
+const FILE_FRESH_MS = 10 * 60000;
 
 const GREEN = "#98c379";
 const YELLOW = "#e5c07b";
@@ -11,6 +18,26 @@ const RED = "#e06c75";
 interface Window {
   readonly utilization?: number | null;
   readonly resets_at?: string | null;
+}
+
+/** Uso vindo do chat: utilization 0-1 e resetsAt em segundos; converte pro formato do endpoint. */
+function readUsageFile(): { at: number; five_hour?: Window; seven_day?: Window } | null {
+  try {
+    const raw = JSON.parse(fs.readFileSync(USAGE_FILE, "utf8")) as {
+      at?: number;
+      windows?: Record<string, { utilization?: number; resetsAt?: number } | null>;
+    };
+    if (!raw.at || !raw.windows) {
+      return null;
+    }
+    const conv = (w: { utilization?: number; resetsAt?: number } | null | undefined): Window | undefined =>
+      w && w.utilization !== undefined
+        ? { utilization: w.utilization * 100, resets_at: w.resetsAt ? new Date(w.resetsAt * 1000).toISOString() : null }
+        : undefined;
+    return { at: raw.at, five_hour: conv(raw.windows.five_hour), seven_day: conv(raw.windows.seven_day) };
+  } catch {
+    return null;
+  }
 }
 
 function keychainToken(): Promise<string | null> {
@@ -117,31 +144,45 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
   context.subscriptions.push(five, week);
 
   const enabled = () => vscode.workspace.getConfiguration("claudeMaia").get<boolean>("usageBar", true);
-
-  // 429 = o endpoint limitou: espera 5 min antes de tentar de novo; fora isso, 1 chamada/min no máximo
   let lastAt = 0;
   let blockedUntil = 0;
+
+  const render = (u: { five_hour?: Window; seven_day?: Window }, origem: string) => {
+    const a = part("5h", u.five_hour, 5 * 3600, 3600);
+    const b = part("7d", u.seven_day, 7 * 86400, 86400);
+    five.text = a.text;
+    five.color = a.color;
+    five.tooltip = `Claude, janela de 5 horas: ${a.tooltip} (${origem})`;
+    week.text = b.text;
+    week.color = b.color;
+    week.tooltip = `Claude, janela de 7 dias: ${b.tooltip} (${origem})`;
+  };
+
   const refresh = async (force = false) => {
-    const now = Date.now();
-    if (now < blockedUntil || (!force && now - lastAt < 60000)) {
-      return;
-    }
-    lastAt = now;
     if (!enabled()) {
       five.hide();
       week.hide();
       return;
     }
+    // 1) arquivo escrito pelo chat: instantâneo, sem request
+    const file = readUsageFile();
+    if (file) {
+      render(file, "do chat");
+      five.show();
+      week.show();
+      if (!force && Date.now() - file.at < FILE_FRESH_MS) {
+        return;
+      }
+    }
+    // 2) endpoint só quando não há dado recente (no máximo 1 chamada/min; 429 = espera 5 min)
+    const now = Date.now();
+    if (now < blockedUntil || (!force && now - lastAt < 60000)) {
+      return;
+    }
+    lastAt = now;
     try {
       const u = await fetchUsage();
-      const a = part("5h", u.five_hour, 5 * 3600, 3600);
-      const b = part("7d", u.seven_day, 7 * 86400, 86400);
-      five.text = a.text;
-      five.color = a.color;
-      five.tooltip = `Claude, janela de 5 horas: ${a.tooltip}`;
-      week.text = b.text;
-      week.color = b.color;
-      week.tooltip = `Claude, janela de 7 dias: ${b.tooltip}`;
+      render(u, "da API");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "erro";
       if (msg === "HTTP 429") {
@@ -149,11 +190,13 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
         five.tooltip = "Claude: o endpoint de uso limitou as consultas; tenta de novo em 5 min";
         return; // mantém o último valor na barra
       }
-      five.text = `5h ${msg}`;
-      five.color = undefined;
-      five.tooltip = "Uso indisponível: abra o Claude Code (login) e clique pra tentar de novo.";
-      week.text = "7d --";
-      week.color = undefined;
+      if (!file) {
+        five.text = `5h ${msg}`;
+        five.color = undefined;
+        five.tooltip = "Uso indisponível: abra o Claude Code (login) e clique pra tentar de novo.";
+        week.text = "7d --";
+        week.color = undefined;
+      }
     }
     five.show();
     week.show();
@@ -164,7 +207,7 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
     if (timer) {
       clearInterval(timer);
     }
-    const secs = Math.max(60, vscode.workspace.getConfiguration("claudeMaia").get<number>("usageIntervalSeconds", 60));
+    const secs = Math.max(60, vscode.workspace.getConfiguration("claudeMaia").get<number>("usageIntervalSeconds", 600));
     timer = setInterval(() => void refresh(true), secs * 1000);
   };
 
@@ -183,6 +226,13 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
     }),
     { dispose: () => timer && clearInterval(timer) }
   );
+  // o chat escreveu uso novo: atualiza na hora
+  try {
+    fs.watchFile(USAGE_FILE, { interval: 1000 }, () => void refresh());
+    context.subscriptions.push({ dispose: () => fs.unwatchFile(USAGE_FILE) });
+  } catch {
+    // sem watcher: fica o timer
+  }
   void refresh(true);
   schedule();
 }

@@ -542,6 +542,12 @@ export function getWebviewScript(): string {
         e.preventDefault();
         const row = e.target && e.target.closest ? e.target.closest('.tree-row[data-session-id]') : null;
         if (row && row.dataset.sessionId) {
+          // vira a âncora do shift+clique (senão o intervalo partia de outro lugar)
+          const idx = getClickableRows().indexOf(row);
+          if (idx !== -1) {
+            focusedIndex = idx;
+            lastCheckedIndex = idx;
+          }
           vscode.postMessage({ type: 'selectFromContext', sessionId: row.dataset.sessionId });
         }
       });

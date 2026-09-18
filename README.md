@@ -3,12 +3,13 @@
 Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS Code" da Anthropic:
 
 - **Sessões**: lista plana das sessões do Claude Code (de `~/.claude/projects`) no Explorer. Clique abre a sessão no chat da extensão oficial (ou foca, se já estiver aberta). Bolinha verde nas sessões abertas (terminal ou chat da IDE; pulsa enquanto responde), sessão em foco fica selecionada, renomear e apagar no hover; botão direito numa sessão entra no modo de seleção e marca ela. Fork de [vscode-claude-sessions](https://github.com/ShahadIshraq/claude-session-vs-code-extension).
-- **Uso do plano na barra inferior**: `5h 32%/40% (2h51m) | 7d 46%/57% (3h11m)`, igual à status line do terminal (usado/cota do tempo já passado, tempo pra resetar; verde abaixo da cota, amarelo acima). Token do Claude Code no Keychain do macOS + endpoint `/api/oauth/usage`.
+- **Uso do plano na barra inferior**: `5h 32%/40% (2h51m) | 7d 46%/57% (3h11m)`, igual à status line do terminal (usado/cota do tempo já passado, tempo pra resetar; verde abaixo da cota, amarelo acima). Vem do próprio chat: a cada resposta a extensão oficial recebe o uso e (patch) grava em `~/.claude/claude-maia-usage.json`; a barra lê dali na hora, sem request. Só se o chat ficar 10 min sem mandar uso ela consulta o endpoint `/api/oauth/usage` com o token do Keychain.
 - **Patches automáticos na extensão oficial** (`~/.vscode/extensions/anthropic.claude-code-*/`), reaplicados ao ativar, de hora em hora e quando ela atualiza; cada um desligável nas configurações (`claudeMaia.patch.*`):
   1. navegador (Claude in Chrome) conecta sozinho em toda mensagem, como se ela tivesse `@browser` (se já estiver conectado, não faz nada);
   2. `Ctx 36% (363k/1000k)` sempre visível no rodapé do chat, cores da status line (200k amarelo, 400k vermelho);
   3. o `Ctx` conta sobre a janela inteira do modelo (1000k), igual à status line, em vez da janela útil antes do auto-compact (923k);
-  4. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
+  4. grava o uso do plano recebido a cada resposta em `~/.claude/claude-maia-usage.json` (alimenta a barra sem request);
+  5. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
      Original guardado em `<arquivo>.orig`; comandos "Claude Maia: reaplicar patches" e "restaurar a extensão original". Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
 
 **Instalar**: baixe o `.vsix` da [última release](https://github.com/lucasahimself21/claude-maia/releases/latest) e rode `code --install-extension claude-maia-<versão>.vsix` (ou, no VS Code, Extensions → `...` → Install from VSIX). Precisa da extensão oficial [Claude Code for VS Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) instalada e logada. macOS (o uso do plano lê o token no Keychain).

@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.1.7",
+  "version": "1.2.0",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -182,13 +182,18 @@
         },
         "claudeMaia.usageIntervalSeconds": {
           "type": "number",
-          "default": 60,
-          "description": "Intervalo de atualização do uso, em segundos (mínimo 60). Se o endpoint devolver 429, espera 5 min."
+          "default": 600,
+          "description": "Intervalo da consulta de fallback à API, em segundos (mínimo 60). Só usada quando o chat não mandou uso nos últimos 10 min."
         },
         "claudeMaia.patch.contextFullWindow": {
           "type": "boolean",
           "default": true,
           "description": "Patch: o Ctx do chat conta sobre a janela inteira do modelo (1000k), igual à status line, em vez de descontar a reserva de saída."
+        },
+        "claudeMaia.patch.usageFromChat": {
+          "type": "boolean",
+          "default": true,
+          "description": "Patch: a extensão Claude Code grava o uso do plano (5h/7d) que recebe a cada resposta em ~/.claude/claude-maia-usage.json; a barra lê dali sem consultar a API."
         }
       }
     }
