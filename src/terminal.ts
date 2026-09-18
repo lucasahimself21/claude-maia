@@ -127,6 +127,10 @@ export class ClaudeTerminalService {
           undefined,
           true
         );
+        // sessão nova: vai pra um grupo próprio à direita (igual ao Cmd+Shift+0); já aberta: só foca
+        if (!live) {
+          await vscode.commands.executeCommand("workbench.action.moveEditorToRightGroup");
+        }
         return;
       }
     }

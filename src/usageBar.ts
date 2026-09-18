@@ -112,13 +112,15 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
 
   const enabled = () => vscode.workspace.getConfiguration("claudeMaia").get<boolean>("usageBar", true);
 
-  // o endpoint devolve 429 se chamar demais: no máximo 1 chamada a cada 2 min fora do timer
+  // 429 = o endpoint limitou: espera 5 min antes de tentar de novo; fora isso, 1 chamada/min no máximo
   let lastAt = 0;
+  let blockedUntil = 0;
   const refresh = async (force = false) => {
-    if (!force && Date.now() - lastAt < 120000) {
+    const now = Date.now();
+    if (now < blockedUntil || (!force && now - lastAt < 60000)) {
       return;
     }
-    lastAt = Date.now();
+    lastAt = now;
     if (!enabled()) {
       five.hide();
       week.hide();
@@ -136,7 +138,11 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
       week.tooltip = `Claude, janela de 7 dias: ${b.tooltip}`;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "erro";
-      five.text = msg === "HTTP 429" ? "5h (limite de consultas, tenta em 5 min)" : `5h ${msg}`;
+      if (msg === "HTTP 429") {
+        blockedUntil = Date.now() + 5 * 60000;
+        return; // mantém o último valor na barra
+      }
+      five.text = `5h ${msg}`;
       five.color = undefined;
       five.tooltip = "Uso indisponível: abra o Claude Code (login) e clique pra tentar de novo.";
       week.text = "7d --";
@@ -151,7 +157,7 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
     if (timer) {
       clearInterval(timer);
     }
-    const secs = Math.max(60, vscode.workspace.getConfiguration("claudeMaia").get<number>("usageIntervalSeconds", 300));
+    const secs = Math.max(60, vscode.workspace.getConfiguration("claudeMaia").get<number>("usageIntervalSeconds", 60));
     timer = setInterval(() => void refresh(true), secs * 1000);
   };
 
