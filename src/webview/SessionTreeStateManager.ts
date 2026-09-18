@@ -356,9 +356,9 @@ export class SessionTreeStateManager {
         });
       }
 
-      // fixadas no topo, depois as abertas (as duas em ordem alfabética, pra não trocar de lugar);
-      // fechadas abaixo, da mais recente pra mais antiga
-      const rank = (s: WebviewSessionItem) => (s.pinned ? 2 : s.live !== undefined ? 1 : 0);
+      // fixada+aberta > fixada > aberta > fechada; os três primeiros níveis em ordem alfabética
+      // (pra não trocar de lugar), fechadas da mais recente pra mais antiga
+      const rank = (s: WebviewSessionItem) => (s.pinned ? 2 : 0) + (s.live !== undefined ? 1 : 0);
       sessionItems.sort((a, b) => {
         const ra = rank(a);
         const rb = rank(b);
