@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { readIdeTabTitles, readLiveSessions, tabLabelMatches } from "../liveSessions";
+import { readIdeTabTitles, readLiveSessions, tabMatchesSession } from "../liveSessions";
 
 const IDE_BUSY_WINDOW_MS = 6000;
 import { SessionNode } from "../models";
@@ -140,7 +140,7 @@ export class SessionTreeStateManager {
     let best: SessionNode | undefined;
     for (const sessions of this.sessionsByWorkspace.values()) {
       for (const s of sessions) {
-        if (tabLabelMatches(label, s.title) && (!best || s.updatedAt > best.updatedAt)) {
+        if (tabMatchesSession(label, s) && (!best || s.updatedAt > best.updatedAt)) {
           best = s;
         }
       }
@@ -229,7 +229,7 @@ export class SessionTreeStateManager {
           if (left === 0) {
             break;
           }
-          if (!openIds.has(s.sessionId) && tabLabelMatches(label, s.title)) {
+          if (!openIds.has(s.sessionId) && tabMatchesSession(label, s)) {
             openIds.add(s.sessionId);
             left--;
           }

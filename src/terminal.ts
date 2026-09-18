@@ -1,7 +1,7 @@
 import { execFile, exec } from "child_process";
 import { promisify } from "util";
 import * as vscode from "vscode";
-import { findTerminalForPid, readIdeTabTitles, readLiveSessions, tabLabelMatches } from "./liveSessions";
+import { findTerminalForPid, readIdeTabTitles, readLiveSessions, tabMatchesSession } from "./liveSessions";
 import { SessionNode } from "./models";
 
 const execFileAsync = promisify(execFile);
@@ -134,7 +134,7 @@ export class ClaudeTerminalService {
         // mesmos args do atalho Cmd+Shift+0 (só o id): segue o "preferredLocation" da extensão,
         // senão abre no layout antigo (fullEditor) com outro visual
         // aba já aberta (título casa, mesmo truncado): só foca; senão abre já num grupo novo no fim
-        const tabOpen = [...readIdeTabTitles().keys()].some((label) => tabLabelMatches(label, session.title));
+        const tabOpen = [...readIdeTabTitles().keys()].some((label) => tabMatchesSession(label, session));
         if (tabOpen) {
           await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
         } else {

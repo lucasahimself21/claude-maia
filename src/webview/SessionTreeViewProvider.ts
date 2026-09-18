@@ -3,6 +3,8 @@ import { SessionTreeStateManager } from "./SessionTreeStateManager";
 import { WebviewToExtensionMessage } from "./messages";
 import { getWebviewHtml, getNonce } from "./getWebviewHtml";
 import { renameSession } from "../rename";
+import { readIdeTabTitles, tabMatchesSession } from "../liveSessions";
+import { isPatchApplied } from "../patcher";
 import { ClaudeTerminalService } from "../terminal";
 import { ISessionDiscoveryService } from "../discovery/types";
 import { SessionPromptNode, SessionNode } from "../models";
@@ -167,6 +169,21 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
         if (!session) {
           break;
         }
+        const newTitle = msg.newTitle.trim();
+        const tabOpen = [...readIdeTabTitles().keys()].some((label) => tabMatchesSession(label, session));
+        if (newTitle && tabOpen && isPatchApplied("renameTab")) {
+          // aba aberta: renomeia pela extensão oficial (muda a aba na hora e grava no transcript)
+          (globalThis as { __claudeMaiaRenameTitle?: string }).__claudeMaiaRenameTitle = newTitle;
+          await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
+          await vscode.commands.executeCommand("claude-vscode.renameSessionTab");
+          const g = globalThis as { __claudeMaiaRenameTitle?: string };
+          if (g.__claudeMaiaRenameTitle === undefined) {
+            this.outputChannel.appendLine(`[rename] ${session.sessionId} -> "${newTitle}" também na aba do chat.`);
+          } else {
+            g.__claudeMaiaRenameTitle = undefined; // patch não rodou; segue só pelo transcript
+          }
+        }
+        // grava no transcript de qualquer jeito: é daí que a lista lê o título
         const result = await renameSession(session.transcriptPath, session.sessionId, msg.newTitle);
         if (!result.success) {
           vscode.window.showErrorMessage(`Failed to rename session: ${result.error}`);

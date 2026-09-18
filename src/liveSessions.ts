@@ -99,6 +99,12 @@ export function tabLabelMatches(label: string, title: string): boolean {
   return m !== null && title.startsWith(m[1]);
 }
 
+/** A aba casa com a sessão se bater com o título atual ou com qualquer título anterior dela
+ * (renomeou pela lista e a aba ainda mostra o nome velho, ou vice-versa). */
+export function tabMatchesSession(label: string, session: { title: string; titles?: readonly string[] }): boolean {
+  return (session.titles ?? [session.title]).some((t) => tabLabelMatches(label, t));
+}
+
 /** Título -> quantas abas de chat da extensão Claude Code com esse título estão abertas nesta janela
  * (a aba leva o título da sessão; dois chats podem ter o mesmo título). */
 export function readIdeTabTitles(): Map<string, number> {

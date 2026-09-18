@@ -4,6 +4,8 @@ export interface SessionNode {
   readonly cwd: string;
   readonly transcriptPath: string;
   readonly title: string;
+  /** título atual + os anteriores (ai-title, custom-title): a aba do chat pode ainda mostrar um antigo */
+  readonly titles?: readonly string[];
   readonly updatedAt: number;
 }
 

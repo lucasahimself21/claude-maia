@@ -104,6 +104,12 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
         cwd: candidate.parsed.cwd,
         transcriptPath: candidate.transcriptPath,
         title: buildTitle(candidate.parsed.titleSourceRaw, candidate.parsed.sessionId),
+        titles: [
+          ...new Set([
+            buildTitle(candidate.parsed.titleSourceRaw, candidate.parsed.sessionId),
+            ...candidate.parsed.titleHistory
+          ])
+        ],
         updatedAt: candidate.updatedAt
       };
 

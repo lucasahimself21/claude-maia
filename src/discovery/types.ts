@@ -2,6 +2,8 @@ export interface ParsedSession {
   readonly sessionId: string;
   readonly cwd: string;
   readonly titleSourceRaw: string;
+  /** todos os títulos que a sessão já teve (ai-title, custom-title): a aba do chat pode estar com um antigo */
+  readonly titleHistory: readonly string[];
 }
 
 export interface SessionPrompt {

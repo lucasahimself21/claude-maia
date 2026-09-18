@@ -15,6 +15,7 @@ export interface Patch {
     | "contextFullWindow"
     | "usageFromChat"
     | "chatLineHeight"
+    | "renameTab"
     | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "webview/index.css" | "extension.js";
@@ -79,6 +80,17 @@ export const PATCHES: readonly Patch[] = [
     marker: "/*claude-maia-lh*/"
   },
   {
+    id: "renameTab",
+    title: "renomear pela lista da Claude Maia renomeia a aba do chat (sem input box)",
+    file: "extension.js",
+    // o comando claude-vscode.renameSessionTab só sabe perguntar num input box; Claude Maia e
+    // Claude Code rodam no mesmo extension host, então um global carrega o título novo
+    find: /let ([\w$]+)=await ([\w$]+)\.window\.showInputBox\(\{prompt:"Rename session tab",([^}]*)\}\);if\(\1===void 0\)return!0;/,
+    replace:
+      'let $1=globalThis.__claudeMaiaRenameTitle??await $2.window.showInputBox({prompt:"Rename session tab",$3});globalThis.__claudeMaiaRenameTitle=void 0;if($1===void 0)return!0;/*claude-maia-rename*/',
+    marker: "/*claude-maia-rename*/"
+  },
+  {
     id: "hideSessionManager",
     title: "esconde a barra lateral Session Manager da extensão oficial",
     file: "extension.js",
@@ -87,6 +99,20 @@ export const PATCHES: readonly Patch[] = [
     marker: '"claude-vscode.sessionsListEnabled",!1/*claude-maia*/'
   }
 ];
+
+/** O patch com esse marcador está no arquivo instalado? (lido na hora; é raro e barato o bastante) */
+export function isPatchApplied(id: Patch["id"]): boolean {
+  const p = PATCHES.find((x) => x.id === id);
+  const dir = findClaudeCodeDir();
+  if (!p || !dir) {
+    return false;
+  }
+  try {
+    return fs.readFileSync(path.join(dir, p.file), "utf8").includes(p.marker);
+  } catch {
+    return false;
+  }
+}
 
 export interface PatchResult {
   readonly extensionDir: string | undefined;

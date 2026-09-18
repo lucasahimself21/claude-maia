@@ -181,6 +181,7 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
     week.text = b.text;
     week.color = b.color;
     week.tooltip = `Claude, janela de 7 dias: ${b.tooltip} (${origem})`;
+    scheduleReset(u);
   };
 
   // Regra: o dado vem do chat (arquivo) e só muda quando um chat responde. A API só entra
@@ -229,8 +230,22 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
     week.show();
   };
 
-  // a cada 5 min só confere se a janela resetou (refresh() sem force não chama a API fora disso)
-  const timer = setInterval(() => void refresh(), 5 * 60000);
+  // o dado diz quando reseta: agenda a próxima consulta pra esse instante (nada de polling)
+  let resetTimer: ReturnType<typeof setTimeout> | undefined;
+  const scheduleReset = (u: { five_hour?: Window; seven_day?: Window }) => {
+    if (resetTimer) {
+      clearTimeout(resetTimer);
+      resetTimer = undefined;
+    }
+    const times = [u.five_hour?.resets_at, u.seven_day?.resets_at]
+      .map((iso) => (iso ? new Date(iso).getTime() : NaN))
+      .filter((t) => !isNaN(t) && t > Date.now());
+    if (times.length === 0) {
+      return;
+    }
+    const delay = Math.min(Math.min(...times) - Date.now() + 2000, 2 ** 31 - 1);
+    resetTimer = setTimeout(() => void refresh(), delay);
+  };
 
   context.subscriptions.push(
     vscode.commands.registerCommand("claudeMaia.refreshUsage", () => void refresh(true)),
@@ -244,7 +259,7 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
         void refresh();
       }
     }),
-    { dispose: () => clearInterval(timer) }
+    { dispose: () => resetTimer && clearTimeout(resetTimer) }
   );
   // o chat escreveu uso novo: atualiza na hora
   try {

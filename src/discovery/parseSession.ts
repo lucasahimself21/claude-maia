@@ -19,6 +19,7 @@ export async function parseTranscriptFile(
   let firstUserRaw: string | undefined;
   let latestExplicitTitle: string | undefined;
   let latestAiTitle: string | undefined;
+  const titleHistory: string[] = [];
 
   try {
     for await (const line of rl) {
@@ -50,6 +51,7 @@ export async function parseTranscriptFile(
         const customTitle = toNonEmptySingleLine(parsed.customTitle);
         if (customTitle) {
           latestExplicitTitle = customTitle;
+          titleHistory.push(customTitle);
         }
       }
 
@@ -65,6 +67,7 @@ export async function parseTranscriptFile(
         const aiTitle = toNonEmptySingleLine(parsed.aiTitle);
         if (aiTitle) {
           latestAiTitle = aiTitle;
+          titleHistory.push(aiTitle);
         }
       }
 
@@ -97,7 +100,8 @@ export async function parseTranscriptFile(
         latestExplicitTitle: latestExplicitTitle ?? latestAiTitle,
         firstPromptRaw,
         firstUserRaw
-      }) ?? ""
+      }) ?? "",
+    titleHistory: [...new Set(titleHistory)]
   };
 }
 
