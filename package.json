@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.4.9",
+  "version": "1.4.10",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -105,17 +105,12 @@
       },
       {
         "command": "claudeMaia.checkUpdate",
-        "title": "Procurar atualização",
+        "title": "Atualizar",
         "category": "Claude Maia"
       },
       {
         "command": "claudeMaia.newChat",
-        "title": "Novo chat (grupo novo à direita)",
-        "category": "Claude Maia"
-      },
-      {
-        "command": "claudeMaia.restartChrome",
-        "title": "Reiniciar o Chrome (extensão do navegador desconectada)",
+        "title": "Novo chat",
         "category": "Claude Maia"
       }
     ],
@@ -163,32 +158,32 @@
         },
         {
           "command": "claudeMaia.checkUpdate",
-          "group": "2_update@1"
-        },
-        {
-          "command": "claudeMaia.update",
-          "group": "2_update@2"
-        },
-        {
-          "command": "claudeMaia.refreshUsage",
-          "group": "3_tools@1"
+          "group": "2_update"
         },
         {
           "command": "claudeMaia.patchClaudeCode",
-          "group": "3_tools@2"
+          "group": "3_tools@1"
         },
         {
           "command": "claudeMaia.unpatchClaudeCode",
-          "group": "3_tools@3"
-        },
-        {
-          "command": "claudeMaia.restartChrome",
-          "group": "3_tools@4"
+          "group": "3_tools@2"
         }
       ],
       "commandPalette": [
         {
-          "command": "claudeMaia.newChat",
+          "command": "claudeMaia.patchClaudeCode",
+          "when": "false"
+        },
+        {
+          "command": "claudeMaia.unpatchClaudeCode",
+          "when": "false"
+        },
+        {
+          "command": "claudeMaia.refreshUsage",
+          "when": "false"
+        },
+        {
+          "command": "claudeMaia.update",
           "when": "false"
         },
         {
@@ -196,23 +191,7 @@
           "when": "false"
         },
         {
-          "command": "claudeMaia.update",
-          "when": "false"
-        },
-        {
-          "command": "claudeMaia.refreshUsage",
-          "when": "false"
-        },
-        {
-          "command": "claudeMaia.patchClaudeCode",
-          "when": "false"
-        },
-        {
-          "command": "claudeMaia.unpatchClaudeCode",
-          "when": "false"
-        },
-        {
-          "command": "claudeMaia.restartChrome",
+          "command": "claudeMaia.newChat",
           "when": "false"
         }
       ]

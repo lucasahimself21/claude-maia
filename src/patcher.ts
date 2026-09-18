@@ -282,30 +282,6 @@ export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: stri
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("claudeMaia.restartChrome", async () => {
-      // "Browser extension is not connected" com o Chrome aberto: só fechar e abrir de novo resolve
-      const cp = await import("child_process");
-      try {
-        if (process.platform === "darwin") {
-          cp.execSync("osascript -e 'quit app \"Google Chrome\"'", { stdio: "pipe" });
-          await new Promise((r) => setTimeout(r, 2500));
-          cp.execSync("open -a 'Google Chrome'");
-        } else if (process.platform === "win32") {
-          cp.execSync("taskkill /IM chrome.exe /F", { stdio: "pipe" });
-          await new Promise((r) => setTimeout(r, 2500));
-          cp.execSync("start chrome", { shell: "cmd.exe" });
-        } else {
-          cp.execSync("pkill -x chrome || pkill -x google-chrome || true", { stdio: "pipe" });
-          await new Promise((r) => setTimeout(r, 2500));
-          cp.spawn("google-chrome", [], { detached: true, stdio: "ignore" }).unref();
-        }
-        void vscode.window.showInformationMessage(
-          "Claude Maia: Chrome reiniciado. Manda a próxima mensagem que o navegador reconecta."
-        );
-      } catch (err) {
-        void vscode.window.showWarningMessage(`Claude Maia: não deu pra reiniciar o Chrome (${String(err)})`);
-      }
-    }),
     vscode.commands.registerCommand("claudeMaia.patchClaudeCode", () => run(true)),
     vscode.commands.registerCommand("claudeMaia.unpatchClaudeCode", async () => {
       const restored = restoreOriginals();
