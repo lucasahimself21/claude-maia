@@ -342,8 +342,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const mapTick = setInterval(mapLive, 10000);
     context.subscriptions.push({ dispose: () => clearInterval(mapTick) });
 
+    // trava do rename das abas (declarada aqui porque o updateActive precisa dela)
+    let syncing = false;
+
     // sessão cujo terminal está em foco fica selecionada na lista
+    // (não escuta onDidChangeState: o rename das abas troca o terminal ativo e viraria loop)
     const updateActive = () => {
+      if (syncing) {
+        return;
+      }
       const active = vscode.window.activeTerminal;
       const shell = active ? shellPids.get(active) : undefined;
       let activeId: string | undefined;
@@ -359,17 +366,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       stateManager.setActiveSession(activeId);
     };
     context.subscriptions.push(vscode.window.onDidChangeActiveTerminal(updateActive));
-    context.subscriptions.push(stateManager.onDidChangeState(updateActive));
     const activeTick = setInterval(updateActive, 2000);
     context.subscriptions.push({ dispose: () => clearInterval(activeTick) });
 
     // aba do terminal = nome da sessão na lista (renomeia quando divergir e confere o resultado)
-    let syncing = false;
     const syncTerminalNames = async () => {
       if (syncing) {
         return;
       }
       syncing = true;
+      const before = vscode.window.activeTerminal;
       try {
         const known = new Set(shellPids.values());
         for (const [sessionId, info] of readLiveSessions()) {
@@ -389,6 +395,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           );
         }
       } finally {
+        // devolve o foco pro terminal que estava ativo antes do rename
+        if (before && vscode.window.activeTerminal !== before) {
+          before.show(true);
+        }
         syncing = false;
       }
     };
