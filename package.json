@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.4.10",
+  "version": "1.4.11",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -125,16 +125,6 @@
     },
     "menus": {
       "view/title": [
-        {
-          "command": "claudeSessions.refresh",
-          "when": "view == claudeSessionsExplorer",
-          "group": "navigation"
-        },
-        {
-          "command": "claudeSessions.search",
-          "when": "view == claudeSessionsExplorer && !claudeSessions.filterActive",
-          "group": "navigation"
-        },
         {
           "command": "claudeSessions.clearSelection",
           "when": "view == claudeSessionsExplorer && claudeSessions.hasCheckedSessions",
