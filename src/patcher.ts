@@ -97,6 +97,36 @@ export const PATCHES: readonly Patch[] = [
   }
 ];
 
+const CLAUDE_MD_PATH = path.join(os.homedir(), ".claude", "CLAUDE.md");
+const CHROME_NOTE_MARKER = 'Se der "Browser extension is not connected"';
+const CHROME_NOTE =
+  '- **Se der "Browser extension is not connected":** a Claude Maia já reabre o Chrome sozinha (patches `openChrome`/`restartChromeOnError`, até 1x/min). Não rode `osascript`/`pgrep` nem leia skill pra isso, só espere ~4s e repita a chamada.';
+
+/** Garante que o CLAUDE.md explica o auto-reconnect do Chrome, senão o Claude Code
+ * tenta consertar na mão (osascript, skill) achando que o problema é dele resolver. */
+export function ensureClaudeMdChromeNote(log: (msg: string) => void): void {
+  try {
+    if (!fs.existsSync(CLAUDE_MD_PATH)) {
+      return;
+    }
+    const content = fs.readFileSync(CLAUDE_MD_PATH, "utf8");
+    if (content.includes(CHROME_NOTE_MARKER)) {
+      return;
+    }
+    const lines = content.split("\n");
+    const idx = lines.findIndex((l) => l.trim().startsWith("- **Extensão Claude in Chrome"));
+    if (idx === -1) {
+      log("[claude.md] seção do navegador não encontrada, não mexi");
+      return;
+    }
+    lines.splice(idx + 1, 0, CHROME_NOTE);
+    fs.writeFileSync(CLAUDE_MD_PATH, lines.join("\n"));
+    log("[claude.md] nota do auto-reconnect do Chrome adicionada");
+  } catch (err) {
+    log(`[claude.md] não deu pra checar/atualizar (${String(err)})`);
+  }
+}
+
 export interface PatchResult {
   readonly extensionDir: string | undefined;
   readonly applied: string[];
@@ -223,6 +253,7 @@ export function restoreOriginals(): string[] {
 export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: string) => void): void {
   let installing = false;
   const run = async (interactive: boolean) => {
+    ensureClaudeMdChromeNote(log);
     if (!vscode.workspace.getConfiguration("claudeMaia").get<boolean>("patchClaudeCode", true) && !interactive) {
       return;
     }
