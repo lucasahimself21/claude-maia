@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { readIdeTabTitles, readLiveSessions } from "../liveSessions";
+import { readIdeTabTitles, readLiveSessions, tabLabelMatches } from "../liveSessions";
 
 const IDE_BUSY_WINDOW_MS = 6000;
 import { SessionNode } from "../models";
@@ -134,13 +134,13 @@ export class SessionTreeStateManager {
     this.scheduleStateChange();
   }
 
-  /** Sessão pelo título da aba (a extensão Claude Code nomeia a aba com o título da sessão). */
-  /** Sessão com esse título; se houver mais de uma (dois chats "Google"), a de escrita mais recente. */
-  public getSessionByTitle(title: string): SessionNode | undefined {
+  /** Sessão pelo nome da aba do chat (título, possivelmente truncado com "…");
+   * se mais de uma casar (dois chats "Google"), a de escrita mais recente. */
+  public getSessionByTabLabel(label: string): SessionNode | undefined {
     let best: SessionNode | undefined;
     for (const sessions of this.sessionsByWorkspace.values()) {
       for (const s of sessions) {
-        if (s.title === title && (!best || s.updatedAt > best.updatedAt)) {
+        if (tabLabelMatches(label, s.title) && (!best || s.updatedAt > best.updatedAt)) {
           best = s;
         }
       }
@@ -219,16 +219,23 @@ export class SessionTreeStateManager {
 
       const liveSessions = readLiveSessions();
       const ideTabs = readIdeTabTitles();
-      // N abas abertas com um título = as N sessões desse título de escrita mais recente estão abertas
-      // (sem isso, dois chats "Google" acendiam a bolinha nos dois com uma aba só)
-      const titleRank = new Map<string, number>();
-      const seenTitles = new Map<string, number>();
-      for (const s of [...sessions].sort((a, b) => b.updatedAt - a.updatedAt)) {
-        const n = seenTitles.get(s.title) ?? 0;
-        titleRank.set(s.sessionId, n);
-        seenTitles.set(s.title, n + 1);
+      // cada aba aberta vale pra UMA sessão: a de escrita mais recente cujo título casa com o nome
+      // da aba (sem isso, dois chats "Google" acendiam a bolinha nos dois com uma aba só)
+      const openIds = new Set<string>();
+      const byRecent = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt);
+      for (const [label, count] of ideTabs) {
+        let left = count;
+        for (const s of byRecent) {
+          if (left === 0) {
+            break;
+          }
+          if (!openIds.has(s.sessionId) && tabLabelMatches(label, s.title)) {
+            openIds.add(s.sessionId);
+            left--;
+          }
+        }
       }
-      const openInIde = (s: SessionNode) => (titleRank.get(s.sessionId) ?? 0) < (ideTabs.get(s.title) ?? 0);
+      const openInIde = (s: SessionNode) => openIds.has(s.sessionId);
       const sessionItems: WebviewSessionItem[] = [];
       for (const session of sessions) {
         // só a sessão expandida precisa dos prompts: parsear o transcript de todas a cada

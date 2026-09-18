@@ -89,6 +89,16 @@ function pidAlive(pid: number): boolean {
 }
 
 /** Map sessionId -> { pid, status, updatedAt } só para processos vivos. */
+/** A aba da extensão Claude Code leva o título da sessão, mas trunca os longos
+ * ("Producer gerar producer.…"): casa por prefixo quando termina em reticências. */
+export function tabLabelMatches(label: string, title: string): boolean {
+  if (label === title) {
+    return true;
+  }
+  const m = /^(.+?)\s*(…|\.\.\.)$/.exec(label);
+  return m !== null && title.startsWith(m[1]);
+}
+
 /** Título -> quantas abas de chat da extensão Claude Code com esse título estão abertas nesta janela
  * (a aba leva o título da sessão; dois chats podem ter o mesmo título). */
 export function readIdeTabTitles(): Map<string, number> {
