@@ -153,11 +153,11 @@ export function getWebviewScript(): string {
               '</span>';
 
             rows.push(
-              '<div class="tree-row' + (focusedIndex === rows.length ? ' focused' : '') + (session.active ? ' selected' : '') + (session.attention ? ' attention' : '') + '" ' +
+              '<div class="tree-row' + (focusedIndex === rows.length ? ' focused' : '') + (session.active ? ' selected' : '') + '" ' +
               'data-depth="0" data-type="session" data-session-id="' + escapeHtml(session.sessionId) + '" ' +
               '>' +
               checkboxHtml +
-              (session.live ? '<span class="live-dot ' + session.live + '" title="' + (session.attention ? 'Terminou de responder' : 'Aberta (' + session.live + ')') + '"></span>' : '') +
+              (session.live ? '<span class="live-dot ' + session.live + '" title="Aberta (' + session.live + ')"></span>' : '') +
               labelHtml +
               (isRenaming ? '' : '<span class="tree-description">' + escapeHtml(session.description) + '</span>') +
               hoverActions +

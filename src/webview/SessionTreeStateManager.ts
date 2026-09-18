@@ -23,10 +23,6 @@ export class SessionTreeStateManager {
   private activeSessionId: string | undefined;
   /** sessionId -> quando ficou aberta (ordem de abertura, pra lista não reordenar enquanto aberta) */
   private liveSince = new Map<string, number>();
-  /** último estado visto (busy/idle) por sessão, pra detectar "terminou de responder" */
-  private lastLive = new Map<string, "busy" | "idle">();
-  /** terminou de responder sem estar em foco; limpa quando ganha foco */
-  private attention = new Set<string>();
   private fireTimeout: ReturnType<typeof setTimeout> | undefined;
 
   public constructor(private readonly discoveryService: ISessionDiscoveryService) {}
@@ -300,23 +296,11 @@ export class SessionTreeStateManager {
         }
         const liveState = live ? (live.status === "busy" || ideBusy ? "busy" : "idle") : undefined;
         const isActive = live !== undefined && session.sessionId === this.activeSessionId;
-        if (liveState === "idle" && this.lastLive.get(session.sessionId) === "busy" && !isActive) {
-          this.attention.add(session.sessionId);
-        }
-        if (isActive || liveState === undefined) {
-          this.attention.delete(session.sessionId);
-        }
-        if (liveState) {
-          this.lastLive.set(session.sessionId, liveState);
-        } else {
-          this.lastLive.delete(session.sessionId);
-        }
         sessionItems.push({
           sessionId: session.sessionId,
           title: session.title,
           live: liveState,
           active: isActive,
-          attention: this.attention.has(session.sessionId),
           // aberta = "now" fixo; o tempo só começa a contar depois que fecha
           description: live ? "now" : formatAgeToken(lastUsed),
           tooltip: [
