@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -84,32 +84,39 @@
       },
       {
         "command": "claudeMaia.patchClaudeCode",
-        "title": "Claude Maia: reaplicar patches na extensão Claude Code"
+        "title": "Reaplicar patches na extensão Claude Code",
+        "category": "Claude Maia"
       },
       {
         "command": "claudeMaia.unpatchClaudeCode",
-        "title": "Claude Maia: restaurar a extensão Claude Code original"
+        "title": "Restaurar a extensão Claude Code original",
+        "category": "Claude Maia"
       },
       {
         "command": "claudeMaia.refreshUsage",
-        "title": "Claude Maia: atualizar uso do plano (5h/7d)"
+        "title": "Atualizar uso do plano (5h/7d)",
+        "category": "Claude Maia"
       },
       {
         "command": "claudeMaia.update",
-        "title": "Claude Maia: atualizar pela última release",
-        "icon": "$(cloud-download)"
+        "title": "Atualizar pela última release",
+        "icon": "$(cloud-download)",
+        "category": "Claude Maia"
       },
       {
         "command": "claudeMaia.checkUpdate",
-        "title": "Claude Maia: procurar atualização"
+        "title": "Procurar atualização",
+        "category": "Claude Maia"
       },
       {
         "command": "claudeMaia.newChat",
-        "title": "Claude Maia: novo chat num grupo novo à direita"
+        "title": "Novo chat (grupo novo à direita)",
+        "category": "Claude Maia"
       },
       {
         "command": "claudeMaia.restartChrome",
-        "title": "Claude Maia: reiniciar o Chrome (extensão do navegador desconectada)"
+        "title": "Reiniciar o Chrome (extensão do navegador desconectada)",
+        "category": "Claude Maia"
       }
     ],
     "views": {
@@ -142,6 +149,71 @@
           "command": "claudeSessions.deleteSession",
           "when": "view == claudeSessionsExplorer && claudeSessions.hasCheckedSessions",
           "group": "navigation"
+        },
+        {
+          "submenu": "claudeMaia.menu",
+          "when": "view == claudeSessionsExplorer",
+          "group": "navigation@9"
+        }
+      ],
+      "claudeMaia.menu": [
+        {
+          "command": "claudeMaia.newChat",
+          "group": "1_chat"
+        },
+        {
+          "command": "claudeMaia.checkUpdate",
+          "group": "2_update@1"
+        },
+        {
+          "command": "claudeMaia.update",
+          "group": "2_update@2"
+        },
+        {
+          "command": "claudeMaia.refreshUsage",
+          "group": "3_tools@1"
+        },
+        {
+          "command": "claudeMaia.patchClaudeCode",
+          "group": "3_tools@2"
+        },
+        {
+          "command": "claudeMaia.unpatchClaudeCode",
+          "group": "3_tools@3"
+        },
+        {
+          "command": "claudeMaia.restartChrome",
+          "group": "3_tools@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "claudeMaia.newChat",
+          "when": "false"
+        },
+        {
+          "command": "claudeMaia.checkUpdate",
+          "when": "false"
+        },
+        {
+          "command": "claudeMaia.update",
+          "when": "false"
+        },
+        {
+          "command": "claudeMaia.refreshUsage",
+          "when": "false"
+        },
+        {
+          "command": "claudeMaia.patchClaudeCode",
+          "when": "false"
+        },
+        {
+          "command": "claudeMaia.unpatchClaudeCode",
+          "when": "false"
+        },
+        {
+          "command": "claudeMaia.restartChrome",
+          "when": "false"
         }
       ]
     },
@@ -219,7 +291,14 @@
           "description": "Tamanho da fonte do chat, em px."
         }
       }
-    }
+    },
+    "submenus": [
+      {
+        "id": "claudeMaia.menu",
+        "label": "Claude Maia",
+        "icon": "$(gear)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
