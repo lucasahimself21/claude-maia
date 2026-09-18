@@ -5,7 +5,7 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
 - **Sessões**: lista plana das sessões do Claude Code (de `~/.claude/projects`) no Explorer. Clique abre a sessão no chat da extensão oficial (ou foca, se já estiver aberta). Bolinha verde nas sessões abertas (terminal ou chat da IDE; pulsa enquanto responde), sessão em foco fica selecionada, renomear e apagar no hover. Fork de [vscode-claude-sessions](https://github.com/ShahadIshraq/claude-session-vs-code-extension).
 - **Uso do plano na barra inferior**: `5h 32%/40% (2h51m) | 7d 46%/57% (3h11m)`, igual à status line do terminal (usado/cota do tempo já passado, tempo pra resetar; verde abaixo da cota, amarelo acima). Token do Claude Code no Keychain do macOS + endpoint `/api/oauth/usage`.
 - **Patches automáticos na extensão oficial** (`~/.vscode/extensions/anthropic.claude-code-*/`), reaplicados ao ativar, de hora em hora e quando ela atualiza; cada um desligável nas configurações (`claudeMaia.patch.*`):
-  1. navegador (Claude in Chrome) liga sozinho na primeira mensagem de cada chat, sem `@browser`;
+  1. navegador (Claude in Chrome) liga sozinho, sem `@browser`, quando a mensagem fala de site, chrome, página, url, login, print ou uma das ferramentas (utmify, pagarfy, trackfy...); não conecta em conversa que não precisa (conectar abre o Chrome);
   2. `Ctx 36% (363k/1000k)` sempre visível no rodapé do chat, cores da status line (200k amarelo, 400k vermelho);
   3. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
      Original guardado em `<arquivo>.orig`; comandos "Claude Maia: reaplicar patches" e "restaurar a extensão original". Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
