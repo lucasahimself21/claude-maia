@@ -9,7 +9,13 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 export interface Patch {
-  readonly id: "autoBrowser" | "contextInChat" | "contextFullWindow" | "usageFromChat" | "hideSessionManager";
+  readonly id:
+    | "autoBrowser"
+    | "contextInChat"
+    | "contextFullWindow"
+    | "usageFromChat"
+    | "chatFont"
+    | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "extension.js";
   readonly find: RegExp;
@@ -60,6 +66,35 @@ export const PATCHES: readonly Patch[] = [
     marker: "/*claude-maia-usage*/"
   },
   {
+    id: "chatFont",
+    title: "fonte, tamanho e entrelinha do chat = os do editor (ou claudeMaia.chatFont*)",
+    file: "webview/index.js",
+    // prepend: roda antes do app e sobrescreve as variáveis que o VS Code injeta na webview
+    find: /^/,
+    replace: () => {
+      const f = chatFont();
+      if (!f.family && !f.size && !f.lineHeight) {
+        return "";
+      }
+      const set: string[] = [];
+      if (f.family) {
+        const j = JSON.stringify(f.family);
+        set.push(`s.setProperty("--vscode-font-family",${j});s.setProperty("--vscode-editor-font-family",${j})`);
+      }
+      if (f.size) {
+        const j = JSON.stringify(`${String(f.size)}px`);
+        set.push(
+          `s.setProperty("--vscode-font-size",${j});s.setProperty("--vscode-editor-font-size",${j});s.fontSize=${j}`
+        );
+      }
+      if (f.lineHeight) {
+        set.push(`s.lineHeight=${JSON.stringify(String(f.lineHeight))}`);
+      }
+      return `/*claude-maia-font*/try{var s=document.documentElement.style;${set.join(";")}}catch(_){}\n`;
+    },
+    marker: "/*claude-maia-font*/"
+  },
+  {
     id: "hideSessionManager",
     title: "esconde a barra lateral Session Manager da extensão oficial",
     file: "extension.js",
@@ -106,6 +141,19 @@ export function findClaudeCodeDir(): string | undefined {
     return 0;
   });
   return dirs[0] ? path.join(EXTENSIONS_DIR, dirs[0]) : undefined;
+}
+
+/** Fonte do chat: claudeMaia.chatFont* ou, vazio/0, os valores do editor. lineHeight do editor
+ * só vale como multiplicador (< 8); em px o VS Code usa outra escala e aqui não faria sentido. */
+function chatFont(): { family: string; size: number; lineHeight: number } {
+  const own = vscode.workspace.getConfiguration("claudeMaia");
+  const editor = vscode.workspace.getConfiguration("editor");
+  const family = own.get<string>("chatFontFamily", "").trim() || (editor.get<string>("fontFamily") ?? "").trim();
+  const size = own.get<number>("chatFontSize", 0) || editor.get<number>("fontSize", 0);
+  const ownLh = own.get<number>("chatLineHeight", 0);
+  const editorLh = editor.get<number>("lineHeight", 0);
+  const lineHeight = ownLh || (editorLh > 0 && editorLh < 8 ? editorLh : 0);
+  return { family, size, lineHeight };
 }
 
 function enabledPatches(): readonly Patch[] {
