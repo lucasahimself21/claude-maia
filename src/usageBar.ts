@@ -7,9 +7,9 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 
-// escrito pelo patch "usageFromChat" na extensão Claude Code a cada resposta do chat
+// escrito pelo patch "usageFromChat" na extensão Claude Code a cada resposta do chat (e por esta
+// barra quando ela mesma consulta a API, pra guardar o estado)
 const USAGE_FILE = path.join(os.homedir(), ".claude", "claude-maia-usage.json");
-const FILE_FRESH_MS = 10 * 60000;
 
 const GREEN = "#98c379";
 const YELLOW = "#e5c07b";
@@ -70,6 +70,31 @@ async function fetchUsage(): Promise<{ five_hour?: Window; seven_day?: Window }>
     throw new Error(`HTTP ${String(res.status)}`);
   }
   return (await res.json()) as { five_hour?: Window; seven_day?: Window };
+}
+
+/** Guarda o que a API devolveu no mesmo formato do chat (utilization 0-1, resetsAt em segundos). */
+function writeUsageFile(u: { five_hour?: Window; seven_day?: Window }): void {
+  const conv = (w?: Window) =>
+    w && w.utilization !== null && w.utilization !== undefined
+      ? {
+          utilization: w.utilization / 100,
+          resetsAt: w.resets_at ? Math.round(new Date(w.resets_at).getTime() / 1000) : undefined
+        }
+      : null;
+  try {
+    fs.writeFileSync(
+      USAGE_FILE,
+      JSON.stringify({ at: Date.now(), windows: { five_hour: conv(u.five_hour), seven_day: conv(u.seven_day) } })
+    );
+  } catch {
+    // sem disco: só não persiste
+  }
+}
+
+/** Janela cujo reset já passou: o dado guardado não vale mais. */
+function expired(u: { five_hour?: Window; seven_day?: Window }): boolean {
+  const past = (w?: Window) => !!w?.resets_at && new Date(w.resets_at).getTime() <= Date.now();
+  return past(u.five_hour) || past(u.seven_day);
 }
 
 function secsLeft(iso?: string | null): number | null {
@@ -158,23 +183,24 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
     week.tooltip = `Claude, janela de 7 dias: ${b.tooltip} (${origem})`;
   };
 
+  // Regra: o dado vem do chat (arquivo) e só muda quando um chat responde. A API só entra
+  // quando NÃO há dado ou quando o reset da janela já passou; nesses casos consulta uma vez e
+  // grava no arquivo pra guardar o estado. Clique na barra = força uma consulta.
   const refresh = async (force = false) => {
     if (!enabled()) {
       five.hide();
       week.hide();
       return;
     }
-    // 1) arquivo escrito pelo chat: instantâneo, sem request
     const file = readUsageFile();
     if (file) {
       render(file, "do chat");
       five.show();
       week.show();
-      if (!force && Date.now() - file.at < FILE_FRESH_MS) {
+      if (!force && !expired(file)) {
         return;
       }
     }
-    // 2) endpoint só quando não há dado recente (no máximo 1 chamada/min; 429 = espera 5 min)
     const now = Date.now();
     if (now < blockedUntil || (!force && now - lastAt < 60000)) {
       return;
@@ -183,39 +209,33 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
     try {
       const u = await fetchUsage();
       render(u, "da API");
+      writeUsageFile(u);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "erro";
       if (msg === "HTTP 429") {
         blockedUntil = Date.now() + 5 * 60000;
         five.tooltip = "Claude: o endpoint de uso limitou as consultas; tenta de novo em 5 min";
-        return; // mantém o último valor na barra
-      }
-      if (!file) {
-        five.text = `5h ${msg}`;
+      } else if (!file) {
+        five.text = "5h --";
         five.color = undefined;
-        five.tooltip = "Uso indisponível: abra o Claude Code (login) e clique pra tentar de novo.";
+        five.tooltip = `Uso indisponível (${msg}); volta sozinho na próxima resposta de um chat, ou clique pra tentar`;
         week.text = "7d --";
         week.color = undefined;
+      } else {
+        five.tooltip = `${five.tooltip ?? ""} · janela resetou, API indisponível (${msg})`;
       }
     }
     five.show();
     week.show();
   };
 
-  let timer: ReturnType<typeof setInterval> | undefined;
-  const schedule = () => {
-    if (timer) {
-      clearInterval(timer);
-    }
-    const secs = Math.max(60, vscode.workspace.getConfiguration("claudeMaia").get<number>("usageIntervalSeconds", 600));
-    timer = setInterval(() => void refresh(true), secs * 1000);
-  };
+  // a cada 5 min só confere se a janela resetou (refresh() sem force não chama a API fora disso)
+  const timer = setInterval(() => void refresh(), 5 * 60000);
 
   context.subscriptions.push(
     vscode.commands.registerCommand("claudeMaia.refreshUsage", () => void refresh(true)),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("claudeMaia")) {
-        schedule();
+      if (e.affectsConfiguration("claudeMaia.usageBar")) {
         void refresh();
       }
     }),
@@ -224,7 +244,7 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
         void refresh();
       }
     }),
-    { dispose: () => timer && clearInterval(timer) }
+    { dispose: () => clearInterval(timer) }
   );
   // o chat escreveu uso novo: atualiza na hora
   try {
@@ -233,6 +253,5 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
   } catch {
     // sem watcher: fica o timer
   }
-  void refresh(true);
-  schedule();
+  void refresh();
 }
