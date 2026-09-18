@@ -35,8 +35,8 @@ export const PATCHES: readonly Patch[] = [
     file: "webview/index.js",
     find: "function VV0({usedTokens:$,contextWindow:J,onCompact:Z,buttonClassName:X}){let Y=J>0?Math.min($/J*100,100):0,Q=OD1!==null?OD1:Y,G=100-Q;if(OD1===null){if(J===0)return null;if(G>=50)return null}return F(i75,{percentageUsed:Q,onCompact:Z,buttonClassName:X})}",
     replace:
-      'function VV0({usedTokens:$,contextWindow:J,onCompact:Z,buttonClassName:X}){let Y=J>0?Math.min($/J*100,100):0,Q=OD1!==null?OD1:Y;if(J===0)return null;var mk=function(n){return n>=1000?(n/1000).toFixed(1)+"k":String(n)},mc=$>=400000?"#e06c75":$>=200000?"#e5c07b":"#98c379";return R("span",{style:{display:"inline-flex",alignItems:"center",gap:"4px"},children:[F(i75,{percentageUsed:Q,onCompact:Z,buttonClassName:X}),F("span",{style:{color:mc,fontSize:"11px",whiteSpace:"nowrap"},title:"Contexto usado (tokens/janela). Cor pelo token bruto: 200k amarelo, 400k vermelho.",children:"Ctx "+Math.round(Q)+"% ("+mk($)+"/"+mk(J)+")"})]})}',
-    marker: 'children:"Ctx "+Math.round(Q)+"% ("'
+      'function VV0({usedTokens:$,contextWindow:J,onCompact:Z,buttonClassName:X}){let Y=J>0?Math.min($/J*100,100):0,Q=OD1!==null?OD1:Y;var mk=function(n){return n>=1000?(n/1000).toFixed(1)+"k":String(n)},mc=$>=400000?"#e06c75":$>=200000?"#e5c07b":"#98c379",mt=J>0?"Ctx "+Math.round(Q)+"% ("+mk($)+"/"+mk(J)+")":"Ctx "+mk($);return R("span",{style:{display:"inline-flex",alignItems:"center",gap:"4px"},children:[J>0&&F(i75,{percentageUsed:Q,onCompact:Z,buttonClassName:X}),F("span",{style:{color:mc,fontSize:"11px",whiteSpace:"nowrap"},title:"Contexto usado (tokens/janela). Cor pelo token bruto: 200k amarelo, 400k vermelho.",children:mt})]})}',
+    marker: 'mt=J>0?"Ctx "+Math.round(Q)+"% ("'
   },
   {
     id: "hideSessionManager",

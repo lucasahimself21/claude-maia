@@ -10,7 +10,7 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
   3. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
      Original guardado em `<arquivo>.orig`; comandos "Claude Maia: reaplicar patches" e "restaurar a extensão original". Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
 
-Empacotar: `npm install && npm run compile && npx @vscode/vsce package`. Instalar: `code --install-extension claude-maia-1.0.0.vsix`.
+Empacotar: `npm install && npm run compile && npx @vscode/vsce package`. Instalar: `code --install-extension claude-maia-1.0.1.vsix`.
 
 ---
 

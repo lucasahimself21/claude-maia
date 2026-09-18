@@ -112,7 +112,13 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
 
   const enabled = () => vscode.workspace.getConfiguration("claudeMaia").get<boolean>("usageBar", true);
 
-  const refresh = async () => {
+  // o endpoint devolve 429 se chamar demais: no máximo 1 chamada a cada 2 min fora do timer
+  let lastAt = 0;
+  const refresh = async (force = false) => {
+    if (!force && Date.now() - lastAt < 120000) {
+      return;
+    }
+    lastAt = Date.now();
     if (!enabled()) {
       five.hide();
       week.hide();
@@ -129,7 +135,8 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
       week.color = b.color;
       week.tooltip = `Claude, janela de 7 dias: ${b.tooltip}`;
     } catch (err) {
-      five.text = `5h ${err instanceof Error ? err.message : "erro"}`;
+      const msg = err instanceof Error ? err.message : "erro";
+      five.text = msg === "HTTP 429" ? "5h (limite de consultas, tenta em 5 min)" : `5h ${msg}`;
       five.color = undefined;
       five.tooltip = "Uso indisponível: abra o Claude Code (login) e clique pra tentar de novo.";
       week.text = "7d --";
@@ -144,12 +151,12 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
     if (timer) {
       clearInterval(timer);
     }
-    const secs = Math.max(15, vscode.workspace.getConfiguration("claudeMaia").get<number>("usageIntervalSeconds", 60));
-    timer = setInterval(() => void refresh(), secs * 1000);
+    const secs = Math.max(60, vscode.workspace.getConfiguration("claudeMaia").get<number>("usageIntervalSeconds", 300));
+    timer = setInterval(() => void refresh(true), secs * 1000);
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("claudeMaia.refreshUsage", () => void refresh()),
+    vscode.commands.registerCommand("claudeMaia.refreshUsage", () => void refresh(true)),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("claudeMaia")) {
         schedule();
@@ -163,6 +170,6 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
     }),
     { dispose: () => timer && clearInterval(timer) }
   );
-  void refresh();
+  void refresh(true);
   schedule();
 }
