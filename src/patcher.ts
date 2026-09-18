@@ -9,11 +9,12 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 export interface Patch {
-  readonly id: "autoBrowser" | "contextInChat" | "hideSessionManager";
+  readonly id: "autoBrowser" | "contextInChat" | "contextFullWindow" | "chatFont" | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "extension.js";
   readonly find: string | RegExp;
-  readonly replace: string;
+  /** texto fixo, ou função pra patch que depende de configuração (fonte) */
+  readonly replace: string | (() => string);
   /** trecho que só existe depois do patch */
   readonly marker: string;
 }
@@ -36,6 +37,29 @@ export const PATCHES: readonly Patch[] = [
     replace:
       'function VV0({usedTokens:$,contextWindow:J,onCompact:Z,buttonClassName:X}){let Y=J>0?Math.min($/J*100,100):0,Q=OD1!==null?OD1:Y;var mk=function(n){return n>=1000?(n/1000).toFixed(1)+"k":String(n)},mc=$>=400000?"#e06c75":$>=200000?"#e5c07b":"#98c379",mw=J>0?J:1e6,mt="Ctx "+Math.round(J>0?Q:$/mw*100)+"% ("+mk($)+"/"+mk(mw)+")";return R("span",{style:{display:"inline-flex",alignItems:"center",gap:"4px"},children:[J>0&&F(i75,{percentageUsed:Q,onCompact:Z,buttonClassName:X}),F("span",{style:{color:mc,fontSize:"11px",whiteSpace:"nowrap"},title:"Contexto usado (tokens/janela). Cor pelo token bruto: 200k amarelo, 400k vermelho.",children:mt})]})}',
     marker: 'mw=J>0?J:1e6,mt="Ctx "'
+  },
+  {
+    id: "contextFullWindow",
+    title: "Ctx conta sobre a janela inteira (1000k), igual à status line",
+    file: "webview/index.js",
+    find: "contextWindow:$.usageData.value.contextWindow-$.usageData.value.maxOutputTokens-13000,",
+    replace: "contextWindow:$.usageData.value.contextWindow/*claude-maia*/,",
+    marker: "contextWindow:$.usageData.value.contextWindow/*claude-maia*/,"
+  },
+  {
+    id: "chatFont",
+    title: "fonte do chat = fonte do terminal do VS Code",
+    file: "webview/index.js",
+    find: /^/,
+    replace: () => {
+      const font = chatFont();
+      if (!font) {
+        return "";
+      }
+      const json = JSON.stringify(font);
+      return `/*claude-maia-font*/try{document.documentElement.style.setProperty("--vscode-font-family",${json});document.documentElement.style.setProperty("--vscode-editor-font-family",${json});}catch(_){}\n`;
+    },
+    marker: "/*claude-maia-font*/"
   },
   {
     id: "hideSessionManager",
@@ -86,6 +110,15 @@ export function findClaudeCodeDir(): string | undefined {
   return dirs[0] ? path.join(EXTENSIONS_DIR, dirs[0]) : undefined;
 }
 
+/** Fonte pro chat: claudeMaia.chatFontFamily, ou a do terminal integrado (vazio = não mexe). */
+function chatFont(): string {
+  const own = vscode.workspace.getConfiguration("claudeMaia").get<string>("chatFontFamily", "").trim();
+  if (own) {
+    return own;
+  }
+  return (vscode.workspace.getConfiguration("terminal.integrated").get<string>("fontFamily") ?? "").trim();
+}
+
 function enabledPatches(): readonly Patch[] {
   const cfg = vscode.workspace.getConfiguration("claudeMaia");
   return PATCHES.filter((p) => cfg.get<boolean>(`patch.${p.id}`, true));
@@ -134,7 +167,11 @@ export function applyPatches(log: (msg: string) => void): PatchResult {
         );
         continue;
       }
-      content = content.replace(p.find, p.replace);
+      const replacement = typeof p.replace === "function" ? p.replace() : p.replace;
+      if (replacement === "") {
+        continue; // patch sem efeito com a configuração atual (ex.: sem fonte)
+      }
+      content = content.replace(p.find, replacement);
       if (current.includes(p.marker)) {
         result.skipped.push(p.title);
       } else {
@@ -219,6 +256,14 @@ export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: stri
     })
   );
 
+  // mudou fonte ou ligou/desligou um patch: reaplica (sempre a partir do .orig)
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("claudeMaia") || e.affectsConfiguration("terminal.integrated.fontFamily")) {
+        void run(false);
+      }
+    })
+  );
   setTimeout(() => void run(false), 2000);
   const tick = setInterval(() => void run(false), 60 * 60 * 1000);
   context.subscriptions.push({ dispose: () => clearInterval(tick) });

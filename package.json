@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -189,6 +189,21 @@
           "type": "number",
           "default": 60,
           "description": "Intervalo de atualização do uso, em segundos (mínimo 60). Se o endpoint devolver 429, espera 5 min."
+        },
+        "claudeMaia.patch.contextFullWindow": {
+          "type": "boolean",
+          "default": true,
+          "description": "Patch: o Ctx do chat conta sobre a janela inteira do modelo (1000k), igual à status line, em vez de descontar a reserva de saída."
+        },
+        "claudeMaia.patch.chatFont": {
+          "type": "boolean",
+          "default": true,
+          "description": "Patch: fonte do chat da extensão Claude Code igual à do terminal integrado (ou claudeMaia.chatFontFamily)."
+        },
+        "claudeMaia.chatFontFamily": {
+          "type": "string",
+          "default": "",
+          "description": "Fonte do chat da extensão Claude Code. Vazio = usa terminal.integrated.fontFamily."
         }
       }
     }
