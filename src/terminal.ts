@@ -118,15 +118,9 @@ export class ClaudeTerminalService {
       const commands = await vscode.commands.getCommands(true);
       if (commands.includes("claude-vscode.editor.open") && live?.source !== "terminal") {
         this.outputChannel.appendLine(`[ide] Opening session ${session.sessionId} in Claude Code extension.`);
-        // args: sessionId, initialPrompt, viewColumn, newSessionGroupId, fullEditor (aba de editor, não side bar)
-        await vscode.commands.executeCommand(
-          "claude-vscode.editor.open",
-          session.sessionId,
-          undefined,
-          undefined,
-          undefined,
-          true
-        );
+        // mesmos args do atalho Cmd+Shift+0 (só o id): segue o "preferredLocation" da extensão,
+        // senão abre no layout antigo (fullEditor) com outro visual
+        await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
         // sessão nova: vai pra um grupo próprio à direita (igual ao Cmd+Shift+0); já aberta: só foca
         if (!live) {
           await vscode.commands.executeCommand("workbench.action.moveEditorToRightGroup");
