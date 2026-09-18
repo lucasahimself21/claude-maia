@@ -537,8 +537,13 @@ export function getWebviewScript(): string {
       }, true);
 
       // Suppress default browser context menu
+      // botão direito numa sessão: entra no modo de seleção (se não estiver) e marca ela
       container.addEventListener('contextmenu', (e) => {
         e.preventDefault();
+        const row = e.target && e.target.closest ? e.target.closest('.tree-row[data-session-id]') : null;
+        if (row && row.dataset.sessionId) {
+          vscode.postMessage({ type: 'selectFromContext', sessionId: row.dataset.sessionId });
+        }
       });
 
       // Initial focus

@@ -2,7 +2,7 @@
 
 Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS Code" da Anthropic:
 
-- **Sessões**: lista plana das sessões do Claude Code (de `~/.claude/projects`) no Explorer. Clique abre a sessão no chat da extensão oficial (ou foca, se já estiver aberta). Bolinha verde nas sessões abertas (terminal ou chat da IDE; pulsa enquanto responde), sessão em foco fica selecionada, renomear e apagar no hover. Fork de [vscode-claude-sessions](https://github.com/ShahadIshraq/claude-session-vs-code-extension).
+- **Sessões**: lista plana das sessões do Claude Code (de `~/.claude/projects`) no Explorer. Clique abre a sessão no chat da extensão oficial (ou foca, se já estiver aberta). Bolinha verde nas sessões abertas (terminal ou chat da IDE; pulsa enquanto responde), sessão em foco fica selecionada, renomear e apagar no hover; botão direito numa sessão entra no modo de seleção e marca ela. Fork de [vscode-claude-sessions](https://github.com/ShahadIshraq/claude-session-vs-code-extension).
 - **Uso do plano na barra inferior**: `5h 32%/40% (2h51m) | 7d 46%/57% (3h11m)`, igual à status line do terminal (usado/cota do tempo já passado, tempo pra resetar; verde abaixo da cota, amarelo acima). Token do Claude Code no Keychain do macOS + endpoint `/api/oauth/usage`.
 - **Patches automáticos na extensão oficial** (`~/.vscode/extensions/anthropic.claude-code-*/`), reaplicados ao ativar, de hora em hora e quando ela atualiza; cada um desligável nas configurações (`claudeMaia.patch.*`):
   1. navegador (Claude in Chrome) conecta sozinho em toda mensagem, como se ela tivesse `@browser` (se já estiver conectado, não faz nada);

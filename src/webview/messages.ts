@@ -54,6 +54,7 @@ export type ExtensionToWebviewMessage =
 // Webview → Extension
 export type WebviewToExtensionMessage =
   | { type: "update" }
+  | { type: "selectFromContext"; sessionId: string }
   | { type: "openSession"; sessionId: string }
   | { type: "openSessionDangerously"; sessionId: string }
   | { type: "renameSession"; sessionId: string; newTitle: string }
