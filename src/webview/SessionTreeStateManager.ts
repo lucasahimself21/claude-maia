@@ -229,7 +229,9 @@ export class SessionTreeStateManager {
       const ideTabs = readIdeTabTitles();
       const sessionItems: WebviewSessionItem[] = [];
       for (const session of sessions) {
-        const prompts = await this.getPromptsForSession(session);
+        // só a sessão expandida precisa dos prompts: parsear o transcript de todas a cada
+        // re-render travava a lista enquanto o chat respondia
+        const prompts = this.expandedSessions.has(session.sessionId) ? await this.getPromptsForSession(session) : [];
         const promptItems: WebviewPromptItem[] = prompts.map((prompt, index) => {
           const label = truncateForTreeLabel(prompt.promptTitle, 64);
           const highlightRanges = this.filterQuery ? findHighlightRanges(label, this.filterQuery) : [];

@@ -108,12 +108,28 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
     this.webviewView?.webview.postMessage({ type: "focusSearch" });
   }
 
+  private posting = false;
+  private postPending = false;
+
+  /** Um build por vez; pedidos durante o build viram um único rebuild no fim. */
   private async postStateUpdate(): Promise<void> {
-    if (!this.webviewView) {
+    if (this.posting) {
+      this.postPending = true;
       return;
     }
-    const state = await this.stateManager.buildWebviewState();
-    this.webviewView.webview.postMessage({ type: "updateState", state });
+    this.posting = true;
+    try {
+      do {
+        this.postPending = false;
+        if (!this.webviewView) {
+          return;
+        }
+        const state = await this.stateManager.buildWebviewState();
+        this.webviewView.webview.postMessage({ type: "updateState", state });
+      } while (this.postPending);
+    } finally {
+      this.posting = false;
+    }
   }
 
   private async handleMessage(msg: WebviewToExtensionMessage): Promise<void> {

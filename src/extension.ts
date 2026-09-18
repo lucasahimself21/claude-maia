@@ -408,6 +408,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         setTimeout(() => stateManager.notifyLive(), 1500);
       })
     );
+    context.subscriptions.push(vscode.window.tabGroups.onDidChangeTabGroups(updateActive));
     const activeTick = setInterval(updateActive, 2000);
     context.subscriptions.push({ dispose: () => clearInterval(activeTick) });
 
