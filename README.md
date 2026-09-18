@@ -10,7 +10,11 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
   3. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
      Original guardado em `<arquivo>.orig`; comandos "Claude Maia: reaplicar patches" e "restaurar a extensão original". Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
 
-Empacotar: `npm install && npm run compile && npx @vscode/vsce package`. Instalar: `code --install-extension claude-maia-1.0.4.vsix`.
+**Instalar**: baixe o `.vsix` da [última release](https://github.com/lucasahimself21/claude-maia/releases/latest) e rode `code --install-extension claude-maia-<versão>.vsix` (ou, no VS Code, Extensions → `...` → Install from VSIX). Precisa da extensão oficial [Claude Code for VS Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) instalada e logada. macOS (o uso do plano lê o token no Keychain).
+
+**Atualizar**: a extensão confere o GitHub Releases ao abrir e a cada 6 h; quando tem versão nova aparece o botão de download no título da view "Claude Maia" (e um aviso). Clicou, baixa e instala sozinha; só recarregar a janela. Comando manual: "Claude Maia: procurar atualização".
+
+**Desenvolver**: `npm install && npm run compile && npx @vscode/vsce package`. Publicar: `gh release create v<versão> claude-maia-<versão>.vsix --title v<versão> --notes "..."`.
 
 ---
 

@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "./discovery";
 import { markShellClosed, readLiveSessions, shellPidOf, SESSIONS_DIR } from "./liveSessions";
 import { setupAutoPatch } from "./patcher";
+import { setupUpdater } from "./updater";
 import { setupUsageBar } from "./usageBar";
 import { ClaudeTerminalService } from "./terminal";
 import { SessionTreeStateManager, SessionTreeViewProvider } from "./webview";
@@ -39,6 +40,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const outputChannel = vscode.window.createOutputChannel("Claude Maia");
   setupAutoPatch(context, (msg) => outputChannel.appendLine(msg));
   setupUsageBar(context);
+  setupUpdater(context, (msg) => outputChannel.appendLine(msg));
   const discovery = new ClaudeSessionDiscoveryService(outputChannel);
   const terminalService = new ClaudeTerminalService(outputChannel);
   const stateManager = new SessionTreeStateManager(discovery);

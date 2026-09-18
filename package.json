@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -98,6 +98,15 @@
       {
         "command": "claudeMaia.refreshUsage",
         "title": "Claude Maia: atualizar uso do plano (5h/7d)"
+      },
+      {
+        "command": "claudeMaia.update",
+        "title": "Claude Maia: atualizar pela última release",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "claudeMaia.checkUpdate",
+        "title": "Claude Maia: procurar atualização"
       }
     ],
     "views": {
@@ -111,6 +120,11 @@
     },
     "menus": {
       "view/title": [
+        {
+          "command": "claudeMaia.update",
+          "when": "view == claudeSessionsExplorer && claudeMaia.updateAvailable",
+          "group": "navigation@0"
+        },
         {
           "command": "claudeSessions.refresh",
           "when": "view == claudeSessionsExplorer",
