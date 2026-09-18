@@ -148,6 +148,7 @@ export function getWebviewScript(): string {
 
             const hoverActions = isRenaming ? '' :
               '<span class="hover-actions">' +
+              '<button class="action-btn" data-action="togglePin" data-session-id="' + escapeHtml(session.sessionId) + '" title="' + (session.pinned ? 'Desafixar' : 'Fixar no topo') + '"><span class="codicon ' + (session.pinned ? 'codicon-pinned' : 'codicon-pin') + '"></span></button>' +
               '<button class="action-btn" data-action="startRename" data-session-id="' + escapeHtml(session.sessionId) + '" title="Rename"><span class="codicon codicon-edit"></span></button>' +
               '<button class="action-btn" data-action="deleteSession" data-session-id="' + escapeHtml(session.sessionId) + '" title="Delete"><span class="codicon codicon-trash"></span></button>' +
               '</span>';
@@ -158,6 +159,7 @@ export function getWebviewScript(): string {
               '>' +
               checkboxHtml +
               (session.live ? '<span class="live-dot ' + session.live + '" title="Aberta (' + session.live + ')"></span>' : '') +
+              (session.pinned ? '<span class="pin-mark codicon codicon-pinned" title="Fixada"></span>' : '') +
               labelHtml +
               (isRenaming ? '' : '<span class="tree-description">' + escapeHtml(session.description) + '</span>') +
               hoverActions +
@@ -254,6 +256,10 @@ export function getWebviewScript(): string {
           }
           if (action === 'deleteSession') {
             vscode.postMessage({ type: 'deleteSession', sessionId });
+            return;
+          }
+          if (action === 'togglePin') {
+            vscode.postMessage({ type: 'togglePin', sessionId });
             return;
           }
           if (action === 'toggleCheck') {

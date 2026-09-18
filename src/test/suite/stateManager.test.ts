@@ -317,3 +317,38 @@ describe("SessionTreeStateManager.clearChecked", () => {
     manager.clearChecked();
   });
 });
+
+describe("SessionTreeStateManager pin", () => {
+  function fakeMemento(initial: string[] = []) {
+    const store = new Map<string, unknown>([["claudeMaia.pinnedSessions", initial]]);
+    return {
+      keys: () => [...store.keys()],
+      get: <T>(key: string, def?: T) => (store.get(key) as T | undefined) ?? def,
+      update: async (key: string, value: unknown) => {
+        store.set(key, value);
+      },
+      store
+    };
+  }
+
+  it("carrega os fixados do store e alterna gravando de volta", async () => {
+    const memento = fakeMemento(["a"]);
+    const manager = new SessionTreeStateManager(createMockDiscovery(), memento);
+    assert.strictEqual(manager.isPinned("a"), true);
+    assert.strictEqual(manager.isPinned("b"), false);
+    manager.togglePin("b");
+    manager.togglePin("a");
+    await Promise.resolve();
+    assert.strictEqual(manager.isPinned("a"), false);
+    assert.strictEqual(manager.isPinned("b"), true);
+    assert.deepStrictEqual(memento.store.get("claudeMaia.pinnedSessions"), ["b"]);
+    manager.dispose();
+  });
+
+  it("funciona sem store", () => {
+    const manager = new SessionTreeStateManager(createMockDiscovery());
+    manager.togglePin("x");
+    assert.strictEqual(manager.isPinned("x"), true);
+    manager.dispose();
+  });
+});

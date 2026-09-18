@@ -156,6 +156,13 @@ export function getWebviewStyles(): string {
       box-shadow: 0 0 4px #d97757;
     }
 
+    .pin-mark {
+      font-size: 12px;
+      opacity: 0.6;
+      margin-right: 4px;
+      flex-shrink: 0;
+    }
+
     .live-dot.busy {
       animation: live-pulse 1.2s ease-in-out infinite;
     }

@@ -45,7 +45,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(vscode.commands.registerCommand("claudeMaia.newChat", () => openChatInNewGroupAtRight()));
   const discovery = new ClaudeSessionDiscoveryService(outputChannel);
   const terminalService = new ClaudeTerminalService(outputChannel);
-  const stateManager = new SessionTreeStateManager(discovery);
+  const stateManager = new SessionTreeStateManager(discovery, context.globalState);
   outputChannel.appendLine("[lifecycle] Claude Maia activated.");
   outputChannel.appendLine(`[lifecycle] workspaceFolders=${String(vscode.workspace.workspaceFolders?.length ?? 0)}`);
 

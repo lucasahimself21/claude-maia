@@ -208,6 +208,10 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
         break;
       }
 
+      case "togglePin":
+        this.stateManager.togglePin(msg.sessionId);
+        break;
+
       case "clearChecked":
         this.stateManager.clearChecked();
         void vscode.commands.executeCommand("setContext", "claudeSessions.hasCheckedSessions", false);

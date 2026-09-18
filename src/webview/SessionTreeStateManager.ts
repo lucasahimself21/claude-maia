@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { readIdeTabTitles, readLiveSessions, tabMatchesSession } from "../liveSessions";
 
 const IDE_BUSY_WINDOW_MS = 6000;
+const PIN_KEY = "claudeMaia.pinnedSessions";
 import { SessionNode } from "../models";
 import { ISessionDiscoveryService, SessionPrompt } from "../discovery/types";
 import { formatAgeToken, truncateForTreeLabel, findHighlightRanges } from "../utils/formatting";
@@ -21,11 +22,30 @@ export class SessionTreeStateManager {
   private promptsCache = new Map<string, SessionPrompt[]>();
   private hasLoaded = false;
   private activeSessionId: string | undefined;
-  /** sessionId -> quando ficou aberta (ordem de abertura, pra lista não reordenar enquanto aberta) */
-  private liveSince = new Map<string, number>();
   private fireTimeout: ReturnType<typeof setTimeout> | undefined;
+  private pinnedIds: Set<string>;
 
-  public constructor(private readonly discoveryService: ISessionDiscoveryService) {}
+  public constructor(
+    private readonly discoveryService: ISessionDiscoveryService,
+    private readonly pinStore?: vscode.Memento
+  ) {
+    this.pinnedIds = new Set(pinStore?.get<string[]>(PIN_KEY, []) ?? []);
+  }
+
+  public isPinned(sessionId: string): boolean {
+    return this.pinnedIds.has(sessionId);
+  }
+
+  /** Fixa/solta a sessão no topo da lista (guardado no globalState). */
+  public togglePin(sessionId: string): void {
+    if (this.pinnedIds.has(sessionId)) {
+      this.pinnedIds.delete(sessionId);
+    } else {
+      this.pinnedIds.add(sessionId);
+    }
+    void this.pinStore?.update(PIN_KEY, [...this.pinnedIds]);
+    this.scheduleStateChange();
+  }
 
   public getFilterQuery(): string | undefined {
     return this.filterQuery;
@@ -287,13 +307,6 @@ export class SessionTreeStateManager {
           this.scheduleIdleCheck();
         }
 
-        if (live) {
-          if (!this.liveSince.has(session.sessionId)) {
-            this.liveSince.set(session.sessionId, Date.now());
-          }
-        } else {
-          this.liveSince.delete(session.sessionId);
-        }
         const liveState = live ? (live.status === "busy" || ideBusy ? "busy" : "idle") : undefined;
         const isActive = live !== undefined && session.sessionId === this.activeSessionId;
         sessionItems.push({
@@ -301,6 +314,7 @@ export class SessionTreeStateManager {
           title: session.title,
           live: liveState,
           active: isActive,
+          pinned: this.pinnedIds.has(session.sessionId) || undefined,
           // aberta = "now" fixo; o tempo só começa a contar depois que fecha
           description: live ? "now" : formatAgeToken(lastUsed),
           tooltip: [
@@ -321,16 +335,17 @@ export class SessionTreeStateManager {
         });
       }
 
-      // abertas no topo, na ordem em que abriram (não trocam de lugar enquanto abertas);
+      // fixadas no topo, depois as abertas (as duas em ordem alfabética, pra não trocar de lugar);
       // fechadas abaixo, da mais recente pra mais antiga
+      const rank = (s: WebviewSessionItem) => (s.pinned ? 2 : s.live !== undefined ? 1 : 0);
       sessionItems.sort((a, b) => {
-        const aLive = a.live !== undefined ? 1 : 0;
-        const bLive = b.live !== undefined ? 1 : 0;
-        if (aLive !== bLive) {
-          return bLive - aLive;
+        const ra = rank(a);
+        const rb = rank(b);
+        if (ra !== rb) {
+          return rb - ra;
         }
-        if (aLive) {
-          return (this.liveSince.get(a.sessionId) ?? 0) - (this.liveSince.get(b.sessionId) ?? 0);
+        if (ra > 0) {
+          return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
         }
         return b.lastUsed - a.lastUsed;
       });

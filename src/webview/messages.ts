@@ -24,6 +24,8 @@ export interface WebviewSessionItem {
   readonly live?: "busy" | "idle";
   /** terminal dessa sessão é o que está em foco */
   readonly active?: boolean;
+  /** fixada no topo da lista */
+  readonly pinned?: boolean;
   readonly prompts?: WebviewPromptItem[];
 }
 
@@ -60,6 +62,7 @@ export type WebviewToExtensionMessage =
   | { type: "renameSession"; sessionId: string; newTitle: string }
   | { type: "renameCancelled" }
   | { type: "deleteSession"; sessionId: string }
+  | { type: "togglePin"; sessionId: string }
   | { type: "toggleCheck"; sessionId: string }
   | { type: "toggleWorkspaceExpand"; workspaceUri: string }
   | { type: "toggleSessionExpand"; sessionId: string }
