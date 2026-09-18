@@ -12,47 +12,51 @@ export interface Patch {
   readonly id: "autoBrowser" | "contextInChat" | "contextFullWindow" | "usageFromChat" | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "extension.js";
-  readonly find: string | RegExp;
+  readonly find: RegExp;
   /** texto fixo, ou função pra patch que depende de configuração (fonte) */
   readonly replace: string | (() => string);
   /** trecho que só existe depois do patch */
   readonly marker: string;
 }
 
+// Os nomes minificados (z, Y, LT1, VV0, o...) mudam a cada build/plataforma da extensão
+// (2.1.276-darwin-arm64 ≠ 2.1.274-win32-x64): cada patch casa por REGEX nas partes estáveis
+// (nomes de propriedade e strings) e reaproveita os nomes capturados no replace ($1, $2...).
 export const PATCHES: readonly Patch[] = [
   {
     id: "autoBrowser",
     title: "navegador (Claude in Chrome) conecta sozinho em toda mensagem (equivale ao @browser)",
     file: "webview/index.js",
-    find: "let z=Y?.expandMentions!==!1,q=await LT1($,J,G,",
+    find: /let ([\w$]+)=([\w$]+)\?\.expandMentions!==!1,([\w$]+)=await ([\w$]+)\(/,
     replace:
-      'let z=Y?.expandMentions!==!1;if(z&&(this.config?.value?.browserIntegrationSupported??!1)&&this.chromeMcpState?.value?.status==="disconnected"){try{await this.ensureChromeMcpEnabled()}catch(_){}}let q=await LT1($,J,G,',
+      'let $1=$2?.expandMentions!==!1;if($1&&(this.config?.value?.browserIntegrationSupported??!1)&&this.chromeMcpState?.value?.status==="disconnected"){try{await this.ensureChromeMcpEnabled()}catch(_){}}let $3=await $4(',
     marker: 'this.chromeMcpState?.value?.status==="disconnected"){try{await this.ensureChromeMcpEnabled()}'
   },
   {
     id: "contextInChat",
     title: "Ctx 36% (363k/1000k) no rodapé do chat, cores da status line",
     file: "webview/index.js",
-    find: "function VV0({usedTokens:$,contextWindow:J,onCompact:Z,buttonClassName:X}){let Y=J>0?Math.min($/J*100,100):0,Q=OD1!==null?OD1:Y,G=100-Q;if(OD1===null){if(J===0)return null;if(G>=50)return null}return F(i75,{percentageUsed:Q,onCompact:Z,buttonClassName:X})}",
+    // $1 fn, $2 usedTokens, $3 contextWindow, $4 onCompact, $5 buttonClassName, $6 pct, $7 Q, $8 override, $9 G, $10 jsx, $11 pieComponent
+    find: /function ([\w$]+)\(\{usedTokens:([\w$]+),contextWindow:([\w$]+),onCompact:([\w$]+),buttonClassName:([\w$]+)\}\)\{let ([\w$]+)=[\w$]+>0\?Math\.min\([\w$]+\/[\w$]+\*100,100\):0,([\w$]+)=([\w$]+)!==null\?[\w$]+:[\w$]+,([\w$]+)=100-[\w$]+;if\([\w$]+===null\)\{if\([\w$]+===0\)return null;if\([\w$]+>=50\)return null\}return ([\w$]+)\(([\w$]+),\{percentageUsed:[\w$]+,onCompact:[\w$]+,buttonClassName:[\w$]+\}\)\}/,
     replace:
-      'function VV0({usedTokens:$,contextWindow:J,onCompact:Z,buttonClassName:X}){let Y=J>0?Math.min($/J*100,100):0,Q=OD1!==null?OD1:Y;var mk=function(n){return n>=1000?(n/1000).toFixed(1)+"k":String(n)},mc=$>=400000?"#e06c75":$>=200000?"#e5c07b":"#98c379",mw=J>0?J:1e6,mt="Ctx "+Math.round(J>0?Q:$/mw*100)+"% ("+mk($)+"/"+mk(mw)+")";return R("span",{style:{display:"inline-flex",alignItems:"center",gap:"4px"},children:[J>0&&F(i75,{percentageUsed:Q,onCompact:Z,buttonClassName:X}),F("span",{style:{color:mc,fontSize:"11px",whiteSpace:"nowrap"},title:"Contexto usado (tokens/janela). Cor pelo token bruto: 200k amarelo, 400k vermelho.",children:mt})]})}',
-    marker: 'mw=J>0?J:1e6,mt="Ctx "'
+      'function $1({usedTokens:$2,contextWindow:$3,onCompact:$4,buttonClassName:$5}){let $6=$3>0?Math.min($2/$3*100,100):0,$7=$8!==null?$8:$6;var mk=function(n){return n>=1000?(n/1000).toFixed(1)+"k":String(n)},mc=$2>=400000?"#e06c75":$2>=200000?"#e5c07b":"#98c379",mw=$3>0?$3:1e6,mt="Ctx "+Math.round($3>0?$7:$2/mw*100)+"% ("+mk($2)+"/"+mk(mw)+")";return $10("span",{style:{display:"inline-flex",alignItems:"center",gap:"4px"},children:[$3>0&&$10($11,{percentageUsed:$7,onCompact:$4,buttonClassName:$5}),$10("span",{style:{color:mc,fontSize:"11px",whiteSpace:"nowrap"},title:"Contexto usado (tokens/janela). Cor pelo token bruto: 200k amarelo, 400k vermelho.",children:mt})]})}',
+    marker: 'mt="Ctx "+Math.round('
   },
   {
     id: "contextFullWindow",
     title: "Ctx conta sobre a janela inteira (1000k), igual à status line",
     file: "webview/index.js",
-    find: "contextWindow:$.usageData.value.contextWindow-$.usageData.value.maxOutputTokens-13000,",
-    replace: "contextWindow:$.usageData.value.contextWindow/*claude-maia*/,",
-    marker: "contextWindow:$.usageData.value.contextWindow/*claude-maia*/,"
+    find: /contextWindow:([\w$]+)\.usageData\.value\.contextWindow-\1\.usageData\.value\.maxOutputTokens-13000,/,
+    replace: "contextWindow:$1.usageData.value.contextWindow/*claude-maia*/,",
+    marker: ".usageData.value.contextWindow/*claude-maia*/,"
   },
   {
     id: "usageFromChat",
     title: "grava o uso do plano (5h/7d) que chega com cada resposta, pra barra não precisar consultar a API",
     file: "extension.js",
-    find: "this.onRateLimitWindows(o.rate_limit_info.unifiedWindows)",
+    find: /this\.onRateLimitWindows\(([\w$]+)\.rate_limit_info\.unifiedWindows\)/,
     replace:
-      'this.onRateLimitWindows(o.rate_limit_info.unifiedWindows);try{require("fs").writeFileSync(require("path").join(require("os").homedir(),".claude","claude-maia-usage.json"),JSON.stringify({at:Date.now(),windows:o.rate_limit_info.unifiedWindows}))}catch(_){}/*claude-maia-usage*/',
+      'this.onRateLimitWindows($1.rate_limit_info.unifiedWindows);try{require("fs").writeFileSync(require("path").join(require("os").homedir(),".claude","claude-maia-usage.json"),JSON.stringify({at:Date.now(),windows:$1.rate_limit_info.unifiedWindows}))}catch(_){}/*claude-maia-usage*/',
     marker: "/*claude-maia-usage*/"
   },
   {
@@ -142,10 +146,7 @@ export function applyPatches(log: (msg: string) => void): PatchResult {
     }
     let content = base;
     for (const p of patches) {
-      const count =
-        typeof p.find === "string"
-          ? content.split(p.find).length - 1
-          : (content.match(new RegExp(p.find.source, "g")) ?? []).length;
+      const count = (content.match(new RegExp(p.find.source, "g")) ?? []).length;
       if (count !== 1) {
         result.failed.push(
           `${p.title} (trecho ${count === 0 ? "não encontrado" : "ambíguo"} em ${path.basename(dir)})`
