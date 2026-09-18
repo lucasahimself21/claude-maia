@@ -150,10 +150,10 @@ export function getWebviewStyles(): string {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #b39ddb;
+      background: #d97757;
       margin-right: 6px;
       flex-shrink: 0;
-      box-shadow: 0 0 4px #b39ddb;
+      box-shadow: 0 0 4px #d97757;
     }
 
     .live-dot.busy {
@@ -162,8 +162,8 @@ export function getWebviewStyles(): string {
 
     /* terminou de responder e você não estava olhando */
     .tree-row.attention .live-dot {
-      background: #f0a742;
-      box-shadow: 0 0 4px #f0a742;
+      background: #f2c94c;
+      box-shadow: 0 0 5px #f2c94c;
     }
 
     .tree-row.attention .tree-label {
