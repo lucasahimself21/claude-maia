@@ -156,6 +156,12 @@ export function getWebviewStyles(): string {
       box-shadow: 0 0 4px #d97757;
     }
 
+    .tree-separator {
+      height: 1px;
+      margin: 3px 8px;
+      background: var(--vscode-sideBarSectionHeader-border, var(--vscode-panel-border, rgba(128, 128, 128, 0.35)));
+    }
+
     .pin-mark {
       font-size: 12px;
       opacity: 0.6;

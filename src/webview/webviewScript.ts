@@ -129,8 +129,15 @@ export function getWebviewScript(): string {
             continue;
           }
 
+          let prevPinned = false;
+          let rowIndex = 0; // índice só das .tree-row (o traço não conta)
           for (const session of workspace.sessions) {
             const sessionExpanded = false; // sem lista de mensagens por sessão
+            // traço entre as fixadas (sempre primeiro) e o resto
+            if (prevPinned && !session.pinned) {
+              rows.push('<div class="tree-separator"></div>');
+            }
+            prevPinned = !!session.pinned;
             const isChecked = state.checkedSessionIds.includes(session.sessionId);
             const isRenaming = renamingSessionId === session.sessionId;
 
@@ -154,7 +161,7 @@ export function getWebviewScript(): string {
               '</span>';
 
             rows.push(
-              '<div class="tree-row' + (focusedIndex === rows.length ? ' focused' : '') + (session.active ? ' selected' : '') + '" ' +
+              '<div class="tree-row' + (focusedIndex === rowIndex++ ? ' focused' : '') + (session.active ? ' selected' : '') + '" ' +
               'data-depth="0" data-type="session" data-session-id="' + escapeHtml(session.sessionId) + '" ' +
               '>' +
               checkboxHtml +
