@@ -38,7 +38,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     void context.globalState.update("extensionVersion", currentVersion);
   }
 
-  const outputChannel = vscode.window.createOutputChannel("Claude Maia");
+  // { log: true } = LogOutputChannel: além do painel Output, o VS Code grava em disco
+  // (Application Support/Code/logs/<sessão>/window*/exthost/maia.claude-maia/), dá pra ler depois de um bug
+  const outputChannel = vscode.window.createOutputChannel("Claude Maia", { log: true });
   setupAutoPatch(context, (msg) => outputChannel.appendLine(msg));
   setupChatFont(context, (msg) => outputChannel.appendLine(msg));
   setupUsageBar(context);
@@ -402,15 +404,38 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       stateManager.setActiveSession(activeId);
     };
     context.subscriptions.push(vscode.window.onDidChangeActiveTerminal(updateActive));
+    const tabDesc = (t: vscode.Tab) => {
+      const kind = t.input instanceof vscode.TabInputWebview ? `webview:${t.input.viewType}` : "outro";
+      return `"${t.label}" (${kind}, grupo ${String(t.group.viewColumn)})`;
+    };
     context.subscriptions.push(
-      vscode.window.tabGroups.onDidChangeTabs(() => {
+      vscode.window.tabGroups.onDidChangeTabs((e) => {
+        // diagnóstico: quem abriu/fechou/mudou (a Claude Maia nunca fecha aba; se sumir aba aqui, foi outro)
+        const parts = [
+          e.opened.length ? `abriu ${e.opened.map(tabDesc).join(", ")}` : "",
+          e.closed.length ? `fechou ${e.closed.map(tabDesc).join(", ")}` : "",
+          e.changed.length ? `mudou ${e.changed.map(tabDesc).join(", ")}` : ""
+        ].filter(Boolean);
+        const layout = vscode.window.tabGroups.all
+          .map((g) => `[${String(g.viewColumn)}: ${g.tabs.map((t) => t.label).join(" | ") || "vazio"}]`)
+          .join(" ");
+        outputChannel.appendLine(`[abas] ${parts.join("; ")} -> ${layout}`);
         invalidateIdeCache();
         stateManager.notifyLive();
         updateActive();
         setTimeout(() => stateManager.notifyLive(), 1500);
       })
     );
-    context.subscriptions.push(vscode.window.tabGroups.onDidChangeTabGroups(updateActive));
+    context.subscriptions.push(
+      vscode.window.tabGroups.onDidChangeTabGroups((e) => {
+        if (e.opened.length || e.closed.length) {
+          outputChannel.appendLine(
+            `[grupos] abriu ${String(e.opened.length)}, fechou ${String(e.closed.length)}, total ${String(vscode.window.tabGroups.all.length)}`
+          );
+        }
+        updateActive();
+      })
+    );
     const activeTick = setInterval(updateActive, 2000);
     context.subscriptions.push({ dispose: () => clearInterval(activeTick) });
 
