@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.4.25",
+  "version": "1.4.26",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -265,6 +265,11 @@
           "type": "boolean",
           "default": true,
           "description": "Patch: renomear uma sessão pela lista da Claude Maia renomeia a aba do chat aberta (usa o rename da própria extensão, sem input box)."
+        },
+        "claudeMaia.patch.renameTarget": {
+          "type": "boolean",
+          "default": true,
+          "description": "Patch: o rename pela lista mira a sessão clicada, não o primeiro chat ativo (com chats lado a lado, todos são ativos no próprio grupo)."
         }
       }
     },

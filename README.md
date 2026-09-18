@@ -12,7 +12,7 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
   3. o `Ctx` conta sobre a janela inteira do modelo (1000k), igual à status line, em vez da janela útil antes do auto-compact (923k);
   4. grava o uso do plano recebido a cada resposta em `~/.claude/claude-maia-usage.json` (alimenta a barra sem request);
   5. entrelinha do chat (`claudeMaia.chatLineHeight`, 1.3), em CSS;
-  6. renomear pela lista renomeia a aba do chat aberta (usa o rename da oficial, sem input box);
+  6. renomear pela lista renomeia a aba do chat aberta (usa o rename da oficial, sem input box), mirando a sessão clicada mesmo com chats lado a lado (o comando da oficial pegava o primeiro chat ativo);
   7. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
      Original guardado em `<arquivo>.orig`; engrenagem no título da view: "Desativar Claude Maia (Claude Code original)" desfaz tudo e para o reaplicar; "Ativar Claude Maia" volta (nada fica na paleta de comandos). Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
 

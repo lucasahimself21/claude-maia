@@ -17,6 +17,7 @@ export interface Patch {
     | "usageFromChat"
     | "chatLineHeight"
     | "renameTab"
+    | "renameTarget"
     | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "webview/index.css" | "extension.js";
@@ -90,6 +91,17 @@ export const PATCHES: readonly Patch[] = [
     replace:
       'let $1=globalThis.__claudeMaiaRenameTitle??await $2.window.showInputBox({prompt:"Rename session tab",$3});globalThis.__claudeMaiaRenameTitle=void 0;if($1===void 0)return!0;/*claude-maia-rename*/',
     marker: "/*claude-maia-rename*/"
+  },
+  {
+    id: "renameTarget",
+    title: "renomear pela lista acerta a sessão certa mesmo com chats lado a lado",
+    file: "extension.js",
+    // activePanelSessionId devolve o PRIMEIRO painel "active"; com chats em grupos lado a lado todos
+    // são active no próprio grupo e o rename caía no chat errado. Um global diz qual sessão é o alvo.
+    find: /activePanelSessionId\(\)\{for\(let\[([\w$]+),([\w$]+)\]of this\.sessionPanels\)if\(\2\.active\)return \1;return\}/,
+    replace:
+      "activePanelSessionId(){let t=globalThis.__claudeMaiaTargetSession;if(t!==void 0&&this.sessionPanels.has(t))return t;for(let[$1,$2]of this.sessionPanels)if($2.active)return $1;return/*claude-maia-target*/}",
+    marker: "/*claude-maia-target*/"
   },
   {
     id: "hideSessionManager",
