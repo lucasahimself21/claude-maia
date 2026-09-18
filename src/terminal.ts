@@ -112,8 +112,20 @@ function awaitCommandStart(
 
 /** Abre um chat da extensão Claude Code (sessão existente ou novo) já num grupo NOVO no fim, à direita
  * de todos. O `claude-vscode.editor.open` aceita o grupo como 3º argumento, então o chat nasce no lugar
- * certo em vez de aparecer no grupo atual e ser arrastado depois. Grupo ativo vazio: usa ele mesmo. */
-export async function openChatInNewGroupAtRight(sessionId?: string): Promise<void> {
+ * certo em vez de aparecer no grupo atual e ser arrastado depois. Grupo ativo vazio: usa ele mesmo.
+ *
+ * Enfileirada (ver `openChatQueue` abaixo): 2 cliques rápidos no botão disparavam 2 chamadas em paralelo
+ * que liam `tabGroups.activeTabGroup` quase ao mesmo tempo, então a 2ª via o grupo ainda sem a 1ª ter
+ * terminado de criar o dela — as duas competiam por foco/grupo e a UI parecia travar. */
+let openChatQueue: Promise<void> = Promise.resolve();
+export function openChatInNewGroupAtRight(sessionId?: string): Promise<void> {
+  const run = openChatQueue.then(() => openChatInNewGroupAtRightNow(sessionId));
+  // encadeia mesmo se essa rodada falhar, senão uma falha trava a fila pras próximas chamadas
+  openChatQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function openChatInNewGroupAtRightNow(sessionId?: string): Promise<void> {
   let group = vscode.window.tabGroups.activeTabGroup;
   if (group.tabs.length > 0) {
     await vscode.commands.executeCommand("workbench.action.focusLastEditorGroup");
