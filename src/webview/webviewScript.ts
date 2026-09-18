@@ -9,6 +9,10 @@ export function getWebviewScript(): string {
 
 
       const container = document.getElementById('tree-container');
+      const updateBtn = document.getElementById('update-btn');
+      if (updateBtn) {
+        updateBtn.addEventListener('click', () => { vscode.postMessage({ type: 'update' }); });
+      }
       const tooltipEl = document.getElementById('custom-tooltip');
       const searchContainer = document.querySelector('.search-container');
       const searchInput = document.getElementById('search-input');
@@ -482,6 +486,13 @@ export function getWebviewScript(): string {
             focusedIndex = Math.max(allRowCount - 1, 0);
           }
           render();
+        } else if (msg.type === 'updateAvailable') {
+          const btn = document.getElementById('update-btn');
+          if (btn) {
+            btn.hidden = !msg.version;
+            btn.textContent = msg.version ? 'Atualizar Claude Maia pra ' + msg.version : '';
+            document.body.classList.toggle('has-update', !!msg.version);
+          }
         } else if (msg.type === 'startRename') {
           renamingSessionId = msg.sessionId;
           render();

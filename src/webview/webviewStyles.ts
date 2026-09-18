@@ -6,6 +6,14 @@ export function getWebviewStyles(): string {
       box-sizing: border-box;
     }
 
+    body.has-update #tree-container { padding-bottom: 44px; }
+    .update-btn {
+      position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 10;
+      padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      color: var(--vscode-button-foreground); background: var(--vscode-button-background);
+    }
+    .update-btn:hover { background: var(--vscode-button-hoverBackground); }
     body {
       font-family: var(--vscode-font-family, sans-serif);
       font-size: var(--vscode-font-size, 13px);

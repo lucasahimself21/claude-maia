@@ -35,6 +35,10 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
       }
     });
     void vscode.commands.executeCommand("claudeMaia.checkUpdateQuiet");
+    setTimeout(
+      () => this.webviewView?.webview.postMessage({ type: "updateAvailable", version: this.updateVersion }),
+      500
+    );
 
     webviewView.webview.options = {
       enableScripts: true,
@@ -86,6 +90,13 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
     this.webviewView?.webview.postMessage({ type: "cancelRename" });
   }
 
+  private updateVersion: string | undefined;
+  /** Mostra (ou esconde, com undefined) o botão de atualizar no rodapé da view. */
+  public setUpdateAvailable(version: string | undefined): void {
+    this.updateVersion = version;
+    void this.webviewView?.webview.postMessage({ type: "updateAvailable", version });
+  }
+
   public postFocusSearch(): void {
     this.webviewView?.webview.postMessage({ type: "focusSearch" });
   }
@@ -100,6 +111,10 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
 
   private async handleMessage(msg: WebviewToExtensionMessage): Promise<void> {
     switch (msg.type) {
+      case "update":
+        await vscode.commands.executeCommand("claudeMaia.update");
+        break;
+
       case "openSession": {
         const session = this.stateManager.getSessionById(msg.sessionId);
         if (session) {

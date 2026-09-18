@@ -30,6 +30,7 @@ export function getWebviewHtml(
     <input id="search-input" class="search-input" type="text" placeholder="Search sessions..." />
     <button id="search-clear" class="search-clear" title="Close search"><span class="codicon codicon-close"></span></button>
   </div>
+  <button id="update-btn" class="update-btn" type="button" hidden></button>
   <div id="tree-container" class="tree-container"
     data-terminal-green-uri="${terminalGreenUri}"
     data-terminal-red-uri="${terminalRedUri}">

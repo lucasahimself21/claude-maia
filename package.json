@@ -121,11 +121,6 @@
     "menus": {
       "view/title": [
         {
-          "command": "claudeMaia.update",
-          "when": "view == claudeSessionsExplorer && claudeMaia.updateAvailable",
-          "group": "navigation@0"
-        },
-        {
           "command": "claudeSessions.refresh",
           "when": "view == claudeSessionsExplorer",
           "group": "navigation"

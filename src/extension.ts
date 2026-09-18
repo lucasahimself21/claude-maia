@@ -40,7 +40,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const outputChannel = vscode.window.createOutputChannel("Claude Maia");
   setupAutoPatch(context, (msg) => outputChannel.appendLine(msg));
   setupUsageBar(context);
-  setupUpdater(context, (msg) => outputChannel.appendLine(msg));
   const discovery = new ClaudeSessionDiscoveryService(outputChannel);
   const terminalService = new ClaudeTerminalService(outputChannel);
   const stateManager = new SessionTreeStateManager(discovery);
@@ -139,6 +138,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     openSessionView
   );
 
+  setupUpdater(
+    context,
+    (msg) => outputChannel.appendLine(msg),
+    (version) => {
+      explorerProvider.setUpdateAvailable(version);
+      sidebarProvider.setUpdateAvailable(version);
+    }
+  );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider("claudeSessionsExplorer", explorerProvider, {
       webviewOptions: { retainContextWhenHidden: true }

@@ -48,10 +48,12 @@ export type ExtensionToWebviewMessage =
   | { type: "updateState"; state: WebviewTreeState }
   | { type: "startRename"; sessionId: string }
   | { type: "cancelRename" }
-  | { type: "focusSearch" };
+  | { type: "focusSearch" }
+  | { type: "updateAvailable"; version: string | undefined };
 
 // Webview → Extension
 export type WebviewToExtensionMessage =
+  | { type: "update" }
   | { type: "openSession"; sessionId: string }
   | { type: "openSessionDangerously"; sessionId: string }
   | { type: "renameSession"; sessionId: string; newTitle: string }

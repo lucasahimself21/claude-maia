@@ -46,7 +46,11 @@ async function fetchLatest(): Promise<Release | undefined> {
   return (await res.json()) as Release;
 }
 
-export function setupUpdater(context: vscode.ExtensionContext, log: (msg: string) => void): void {
+export function setupUpdater(
+  context: vscode.ExtensionContext,
+  log: (msg: string) => void,
+  onAvailable: (version: string | undefined) => void
+): void {
   const current = (context.extension.packageJSON as { version: string }).version;
   let notified = false;
   let lastCheck = 0;
@@ -66,6 +70,7 @@ export function setupUpdater(context: vscode.ExtensionContext, log: (msg: string
     const available =
       latest !== undefined && newer(latest.tag_name, current) && latest.assets.some((a) => a.name.endsWith(".vsix"));
     await vscode.commands.executeCommand("setContext", "claudeMaia.updateAvailable", available);
+    onAvailable(available && latest ? latest.tag_name : undefined);
     if (available && latest && (interactive || !notified)) {
       notified = true;
       const choice = await vscode.window.showInformationMessage(
@@ -110,6 +115,7 @@ export function setupUpdater(context: vscode.ExtensionContext, log: (msg: string
       }
     );
     await vscode.commands.executeCommand("setContext", "claudeMaia.updateAvailable", false);
+    onAvailable(undefined);
     const choice = await vscode.window.showInformationMessage(
       `Claude Maia ${tag} instalada. Recarregue a janela.`,
       "Reload Window"
