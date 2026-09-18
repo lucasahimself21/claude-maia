@@ -104,10 +104,6 @@ export function getWebviewStyles(): string {
       cursor: pointer;
     }
 
-    .tree-row.selected .tree-checkbox {
-      border-color: currentColor;
-    }
-
     .tree-checkbox.checked {
       background: var(--vscode-checkbox-selectBackground, var(--vscode-focusBorder));
       border-color: var(--vscode-checkbox-selectBorder, var(--vscode-focusBorder));
