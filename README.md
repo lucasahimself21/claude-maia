@@ -9,12 +9,13 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
   2. `Ctx 36% (363k/1000k)` sempre visível no rodapé do chat, cores da status line (200k amarelo, 400k vermelho);
   3. o `Ctx` conta sobre a janela inteira do modelo (1000k), igual à status line, em vez da janela útil antes do auto-compact (923k);
   4. grava o uso do plano recebido a cada resposta em `~/.claude/claude-maia-usage.json` (alimenta a barra sem request);
-  5. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
+  5. abre o Chrome antes de conectar o navegador, se ele não estiver rodando (Mac/Windows/Linux);
+  6. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
      Original guardado em `<arquivo>.orig`; comandos "Claude Maia: reaplicar patches" e "restaurar a extensão original". Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
 
 **Instalar**: baixe o `.vsix` da [última release](https://github.com/lucasahimself21/claude-maia/releases/latest) e rode `code --install-extension claude-maia-<versão>.vsix` (ou, no VS Code, Extensions → `...` → Install from VSIX). Se a extensão oficial [Claude Code for VS Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) não estiver instalada, a Claude Maia instala ela do marketplace e aplica os patches; só falta logar. macOS e Windows.
 
-**Atualizar**: a extensão confere o GitHub Releases ao abrir, sempre que a view "Claude Maia" aparece (no máximo 1 vez a cada 2 min) e a cada 6 h; quando tem versão nova aparece um botão "Atualizar Claude Maia pra vX" no rodapé da view (e um aviso). Clicou, baixa e instala sozinha e o botão vira "Recarregar pra ativar vX". Comando manual: "Claude Maia: procurar atualização".
+**Atualizar**: a extensão confere o GitHub Releases ao abrir, sempre que a view "Claude Maia" aparece (no máximo 1 vez a cada 2 min) e a cada 6 h; quando tem versão nova aparece um botão "Atualizar Claude Maia pra vX" no rodapé da view (e um aviso). Clicou, baixa e instala sozinha e o botão vira "Recarregar pra ativar vX". Comando manual: "Claude Maia: procurar atualização". Se o chat disser "Browser extension is not connected" com o Chrome aberto: comando "Claude Maia: reiniciar o Chrome" (fecha e abre; a extensão do Chrome reconecta sozinha).
 
 **Desenvolver**: `npm install && npm run compile && npx @vscode/vsce package`. Publicar: `gh release create v<versão> claude-maia-<versão>.vsix --title v<versão> --notes "..."`.
 

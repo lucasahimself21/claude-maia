@@ -9,7 +9,13 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 export interface Patch {
-  readonly id: "autoBrowser" | "contextInChat" | "contextFullWindow" | "usageFromChat" | "hideSessionManager";
+  readonly id:
+    | "autoBrowser"
+    | "contextInChat"
+    | "contextFullWindow"
+    | "usageFromChat"
+    | "openChrome"
+    | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "extension.js";
   readonly find: RegExp;
@@ -58,6 +64,16 @@ export const PATCHES: readonly Patch[] = [
     replace:
       'this.onRateLimitWindows($1.rate_limit_info.unifiedWindows);try{require("fs").writeFileSync(require("path").join(require("os").homedir(),".claude","claude-maia-usage.json"),JSON.stringify({at:Date.now(),windows:$1.rate_limit_info.unifiedWindows}))}catch(_){}/*claude-maia-usage*/',
     marker: "/*claude-maia-usage*/"
+  },
+  {
+    id: "openChrome",
+    title: "abre o Chrome antes de conectar o navegador, se ele não estiver rodando",
+    file: "extension.js",
+    // lado Node da extensão: o método que liga o Claude in Chrome (o da subclasse, que checa a plataforma)
+    find: /async ensureChromeMcpEnabled\(([\w$]+)\)\{if\(process\.platform==="darwin"\|\|process\.platform==="win32"\|\|process\.platform==="linux"\)\{/,
+    replace:
+      'async ensureChromeMcpEnabled($1){/*claude-maia-chrome*/try{const cp=require("child_process"),pl=process.platform,running=()=>{try{if(pl==="darwin")return cp.execSync("pgrep -x \'Google Chrome\'",{stdio:"pipe"}).toString().trim()!=="";if(pl==="win32")return cp.execSync("tasklist /NH",{stdio:"pipe"}).toString().toLowerCase().includes("chrome.exe");return cp.execSync("pgrep -x chrome || pgrep -x google-chrome || pgrep -x chromium",{stdio:"pipe"}).toString().trim()!==""}catch(_){return false}};if(!running()){if(pl==="darwin")cp.execSync("open -a \'Google Chrome\'");else if(pl==="win32")cp.execSync("start chrome",{shell:"cmd.exe"});else cp.spawn("google-chrome",[],{detached:true,stdio:"ignore"}).unref();await new Promise(r=>setTimeout(r,3500))}}catch(_){}if(process.platform==="darwin"||process.platform==="win32"||process.platform==="linux"){',
+    marker: "/*claude-maia-chrome*/"
   },
   {
     id: "hideSessionManager",
@@ -253,6 +269,30 @@ export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: stri
   };
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("claudeMaia.restartChrome", async () => {
+      // "Browser extension is not connected" com o Chrome aberto: só fechar e abrir de novo resolve
+      const cp = await import("child_process");
+      try {
+        if (process.platform === "darwin") {
+          cp.execSync("osascript -e 'quit app \"Google Chrome\"'", { stdio: "pipe" });
+          await new Promise((r) => setTimeout(r, 2500));
+          cp.execSync("open -a 'Google Chrome'");
+        } else if (process.platform === "win32") {
+          cp.execSync("taskkill /IM chrome.exe /F", { stdio: "pipe" });
+          await new Promise((r) => setTimeout(r, 2500));
+          cp.execSync("start chrome", { shell: "cmd.exe" });
+        } else {
+          cp.execSync("pkill -x chrome || pkill -x google-chrome || true", { stdio: "pipe" });
+          await new Promise((r) => setTimeout(r, 2500));
+          cp.spawn("google-chrome", [], { detached: true, stdio: "ignore" }).unref();
+        }
+        void vscode.window.showInformationMessage(
+          "Claude Maia: Chrome reiniciado. Manda a próxima mensagem que o navegador reconecta."
+        );
+      } catch (err) {
+        void vscode.window.showWarningMessage(`Claude Maia: não deu pra reiniciar o Chrome (${String(err)})`);
+      }
+    }),
     vscode.commands.registerCommand("claudeMaia.patchClaudeCode", () => run(true)),
     vscode.commands.registerCommand("claudeMaia.unpatchClaudeCode", async () => {
       const restored = restoreOriginals();

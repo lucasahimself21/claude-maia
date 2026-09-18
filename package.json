@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.2.5",
+  "version": "1.3.0",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -107,6 +107,10 @@
       {
         "command": "claudeMaia.checkUpdate",
         "title": "Claude Maia: procurar atualização"
+      },
+      {
+        "command": "claudeMaia.restartChrome",
+        "title": "Claude Maia: reiniciar o Chrome (extensão do navegador desconectada)"
       }
     ],
     "views": {
@@ -189,6 +193,11 @@
           "type": "boolean",
           "default": true,
           "description": "Patch: a extensão Claude Code grava o uso do plano (5h/7d) que recebe a cada resposta em ~/.claude/claude-maia-usage.json; a barra lê dali sem consultar a API."
+        },
+        "claudeMaia.patch.openChrome": {
+          "type": "boolean",
+          "default": true,
+          "description": "Patch: antes de conectar o navegador, abre o Chrome se ele não estiver rodando (Mac, Windows, Linux)."
         }
       }
     }
