@@ -62,7 +62,6 @@ export type WebviewToExtensionMessage =
   | { type: "renameSession"; sessionId: string; newTitle: string }
   | { type: "renameCancelled" }
   | { type: "deleteSession"; sessionId: string }
-  | { type: "closeTab"; sessionId: string }
   | { type: "toggleCheck"; sessionId: string }
   | { type: "toggleWorkspaceExpand"; workspaceUri: string }
   | { type: "toggleSessionExpand"; sessionId: string }

@@ -7,7 +7,6 @@ import { ClaudeTerminalService } from "../terminal";
 import { ISessionDiscoveryService } from "../discovery/types";
 import { SessionPromptNode, SessionNode } from "../models";
 import { confirmAndDeleteSessions, confirmDangerousLaunch } from "../utils/sessionActions";
-import { tabLabelMatches } from "../liveSessions";
 
 export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
   private webviewView: vscode.WebviewView | undefined;
@@ -189,28 +188,6 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         await confirmAndDeleteSessions([session], this.discovery, this.stateManager, this.outputChannel);
-        break;
-      }
-
-      case "closeTab": {
-        const session = this.stateManager.getSessionById(msg.sessionId);
-        if (!session) {
-          break;
-        }
-        // fecha a aba do chat da extensão Claude Code cujo nome casa com o título (só a primeira)
-        for (const group of vscode.window.tabGroups.all) {
-          const tab = group.tabs.find(
-            (t) =>
-              t.input instanceof vscode.TabInputWebview &&
-              /claude/i.test(t.input.viewType) &&
-              tabLabelMatches(t.label, session.title)
-          );
-          if (tab) {
-            await vscode.window.tabGroups.close(tab);
-            this.outputChannel.appendLine(`[ide] Closed tab "${tab.label}" (${msg.sessionId.slice(0, 8)}).`);
-            break;
-          }
-        }
         break;
       }
 

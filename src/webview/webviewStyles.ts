@@ -150,10 +150,10 @@ export function getWebviewStyles(): string {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #8fd694;
+      background: #b39ddb;
       margin-right: 6px;
       flex-shrink: 0;
-      box-shadow: 0 0 4px #8fd694;
+      box-shadow: 0 0 4px #b39ddb;
     }
 
     .live-dot.busy {
