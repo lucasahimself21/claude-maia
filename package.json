@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -17,8 +17,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:claudeSessionsExplorer",
-    "onView:claudeSessionsSidebarView"
+    "onView:claudeSessionsExplorer"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -108,22 +107,6 @@
           "name": "Claude Maia",
           "type": "webview"
         }
-      ],
-      "claudeSessionsContainer": [
-        {
-          "id": "claudeSessionsSidebarView",
-          "name": "Sessions",
-          "type": "webview"
-        }
-      ]
-    },
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "claudeSessionsContainer",
-          "title": "Claude Maia",
-          "icon": "media/claude-sessions.svg"
-        }
       ]
     },
     "menus": {
@@ -134,18 +117,8 @@
           "group": "navigation"
         },
         {
-          "command": "claudeSessions.refresh",
-          "when": "view == claudeSessionsSidebarView",
-          "group": "navigation"
-        },
-        {
           "command": "claudeSessions.search",
           "when": "view == claudeSessionsExplorer && !claudeSessions.filterActive",
-          "group": "navigation"
-        },
-        {
-          "command": "claudeSessions.search",
-          "when": "view == claudeSessionsSidebarView && !claudeSessions.filterActive",
           "group": "navigation"
         },
         {
@@ -161,21 +134,6 @@
         {
           "command": "claudeSessions.deleteSession",
           "when": "view == claudeSessionsExplorer && claudeSessions.hasCheckedSessions",
-          "group": "navigation"
-        },
-        {
-          "command": "claudeSessions.toggleSelectionMode",
-          "when": "view == claudeSessionsSidebarView",
-          "group": "navigation"
-        },
-        {
-          "command": "claudeSessions.clearSelection",
-          "when": "view == claudeSessionsSidebarView && claudeSessions.hasCheckedSessions",
-          "group": "navigation"
-        },
-        {
-          "command": "claudeSessions.deleteSession",
-          "when": "view == claudeSessionsSidebarView && claudeSessions.hasCheckedSessions",
           "group": "navigation"
         }
       ]
