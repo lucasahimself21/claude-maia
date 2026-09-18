@@ -160,6 +160,16 @@ export function getWebviewStyles(): string {
       animation: live-pulse 1.2s ease-in-out infinite;
     }
 
+    /* terminou de responder e você não estava olhando */
+    .tree-row.attention .live-dot {
+      background: #f0a742;
+      box-shadow: 0 0 4px #f0a742;
+    }
+
+    .tree-row.attention .tree-label {
+      font-weight: 600;
+    }
+
     @keyframes live-pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.35; }
