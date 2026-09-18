@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -189,20 +189,10 @@
           "default": true,
           "description": "Patch: a extensão Claude Code grava o uso do plano (5h/7d) que recebe a cada resposta em ~/.claude/claude-maia-usage.json; a barra lê dali sem consultar a API."
         },
-        "claudeMaia.patch.chatFont": {
+        "claudeMaia.patch.chatLineHeight": {
           "type": "boolean",
           "default": true,
-          "description": "Patch: fonte, tamanho e entrelinha do chat da extensão Claude Code iguais aos do editor (editor.fontFamily/fontSize/lineHeight), ou os claudeMaia.chatFont* abaixo."
-        },
-        "claudeMaia.chatFontFamily": {
-          "type": "string",
-          "default": "",
-          "description": "Fonte do chat. Vazio = editor.fontFamily."
-        },
-        "claudeMaia.chatFontSize": {
-          "type": "number",
-          "default": 0,
-          "description": "Tamanho da fonte do chat em px. 0 = editor.fontSize."
+          "description": "Patch (CSS): entrelinha do chat da extensão Claude Code = editor.lineHeight (multiplicador) ou claudeMaia.chatLineHeight. Fonte e tamanho do chat são configuração da própria extensão: chat.fontFamily, chat.fontSize, chat.editor.fontFamily, chat.editor.fontSize."
         },
         "claudeMaia.chatLineHeight": {
           "type": "number",

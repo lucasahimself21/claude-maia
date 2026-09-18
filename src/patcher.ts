@@ -14,10 +14,10 @@ export interface Patch {
     | "contextInChat"
     | "contextFullWindow"
     | "usageFromChat"
-    | "chatFont"
+    | "chatLineHeight"
     | "hideSessionManager";
   readonly title: string;
-  readonly file: "webview/index.js" | "extension.js";
+  readonly file: "webview/index.js" | "webview/index.css" | "extension.js";
   readonly find: RegExp;
   /** texto fixo, ou função pra patch que depende de configuração (fonte) */
   readonly replace: string | (() => string);
@@ -66,40 +66,17 @@ export const PATCHES: readonly Patch[] = [
     marker: "/*claude-maia-usage*/"
   },
   {
-    id: "chatFont",
-    title: "fonte, tamanho e entrelinha do chat = os do editor (ou claudeMaia.chatFont*)",
-    file: "webview/index.js",
-    // prepend: roda antes do app. O bundle embute a pilha do sistema (-apple-system, BlinkMacSystemFont...)
-    // em vez da variável do VS Code, então só uma folha de estilo com !important muda o texto do chat;
-    // os ícones (codicon) ficam de fora pra não virar quadradinho.
-    find: /^/,
+    id: "chatLineHeight",
+    title: "entrelinha do chat = editor.lineHeight (ou claudeMaia.chatLineHeight)",
+    file: "webview/index.css",
+    // fonte e tamanho do chat já são configuráveis na própria extensão (chat.fontFamily, chat.fontSize,
+    // chat.editor.fontFamily/fontSize); só a entrelinha não tem configuração. CSS puro: não mexe no JS.
+    find: /$/,
     replace: () => {
-      const f = chatFont();
-      if (!f.family && !f.size && !f.lineHeight) {
-        return "";
-      }
-      const css: string[] = [];
-      const vars: string[] = [];
-      if (f.family) {
-        const j = JSON.stringify(f.family);
-        css.push(`body,body *:not(.codicon):not(.codicon *){font-family:${j},monospace!important}`);
-        vars.push(`s.setProperty("--vscode-font-family",${j});s.setProperty("--vscode-editor-font-family",${j})`);
-      }
-      if (f.size) {
-        css.push(`body{font-size:${String(f.size)}px!important}`);
-        vars.push(`s.setProperty("--vscode-font-size",${JSON.stringify(`${String(f.size)}px`)})`);
-      }
-      if (f.lineHeight) {
-        css.push(`body{line-height:${String(f.lineHeight)}!important}`);
-      }
-      const cssJson = JSON.stringify(css.join(""));
-      return (
-        `/*claude-maia-font*/try{var s=document.documentElement.style;${vars.join(";")};` +
-        `var st=document.createElement("style");st.id="claude-maia-font";st.textContent=${cssJson};` +
-        `(document.head||document.documentElement).appendChild(st)}catch(_){}\n`
-      );
+      const lh = chatLineHeight();
+      return lh ? `\n/*claude-maia-lh*/body{line-height:${String(lh)}}\n` : "";
     },
-    marker: "/*claude-maia-font*/"
+    marker: "/*claude-maia-lh*/"
   },
   {
     id: "hideSessionManager",
@@ -150,17 +127,14 @@ export function findClaudeCodeDir(): string | undefined {
   return dirs[0] ? path.join(EXTENSIONS_DIR, dirs[0]) : undefined;
 }
 
-/** Fonte do chat: claudeMaia.chatFont* ou, vazio/0, os valores do editor. lineHeight do editor
- * só vale como multiplicador (< 8); em px o VS Code usa outra escala e aqui não faria sentido. */
-function chatFont(): { family: string; size: number; lineHeight: number } {
-  const own = vscode.workspace.getConfiguration("claudeMaia");
-  const editor = vscode.workspace.getConfiguration("editor");
-  const family = own.get<string>("chatFontFamily", "").trim() || (editor.get<string>("fontFamily") ?? "").trim();
-  const size = own.get<number>("chatFontSize", 0) || editor.get<number>("fontSize", 0);
-  const ownLh = own.get<number>("chatLineHeight", 0);
-  const editorLh = editor.get<number>("lineHeight", 0);
-  const lineHeight = ownLh || (editorLh > 0 && editorLh < 8 ? editorLh : 0);
-  return { family, size, lineHeight };
+/** Entrelinha do chat: claudeMaia.chatLineHeight ou, 0, o editor.lineHeight se for multiplicador (< 8). */
+function chatLineHeight(): number {
+  const own = vscode.workspace.getConfiguration("claudeMaia").get<number>("chatLineHeight", 0);
+  if (own) {
+    return own;
+  }
+  const editor = vscode.workspace.getConfiguration("editor").get<number>("lineHeight", 0);
+  return editor > 0 && editor < 8 ? editor : 0;
 }
 
 function enabledPatches(): readonly Patch[] {
@@ -180,7 +154,7 @@ export function applyPatches(log: (msg: string) => void): PatchResult {
   for (const p of enabledPatches()) {
     byFile.set(p.file, [...(byFile.get(p.file) ?? []), p]);
   }
-  for (const file of ["webview/index.js", "extension.js"] as const) {
+  for (const file of ["webview/index.js", "webview/index.css", "extension.js"] as const) {
     const patches = byFile.get(file) ?? [];
     const full = path.join(dir, file);
     const orig = `${full}.orig`;
@@ -234,7 +208,7 @@ export function restoreOriginals(): string[] {
   if (!dir) {
     return restored;
   }
-  for (const file of ["webview/index.js", "extension.js"]) {
+  for (const file of ["webview/index.js", "webview/index.css", "extension.js"]) {
     const full = path.join(dir, file);
     const orig = `${full}.orig`;
     if (fs.existsSync(orig)) {

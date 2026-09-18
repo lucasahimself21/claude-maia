@@ -9,7 +9,7 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
   2. `Ctx 36% (363k/1000k)` sempre visível no rodapé do chat, cores da status line (200k amarelo, 400k vermelho);
   3. o `Ctx` conta sobre a janela inteira do modelo (1000k), igual à status line, em vez da janela útil antes do auto-compact (923k);
   4. grava o uso do plano recebido a cada resposta em `~/.claude/claude-maia-usage.json` (alimenta a barra sem request);
-  5. fonte, tamanho e entrelinha do chat iguais aos do editor (`editor.fontFamily/fontSize/lineHeight`), ou `claudeMaia.chatFont*`;
+  5. entrelinha do chat = `editor.lineHeight` (ou `claudeMaia.chatLineHeight`), em CSS. Fonte e tamanho do chat não precisam de patch: a extensão oficial lê `chat.fontFamily`, `chat.fontSize`, `chat.editor.fontFamily`, `chat.editor.fontSize` do VS Code;
   6. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
      Original guardado em `<arquivo>.orig`; comandos "Claude Maia: reaplicar patches" e "restaurar a extensão original". Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
 
