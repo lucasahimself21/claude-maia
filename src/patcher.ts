@@ -9,14 +9,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 export interface Patch {
-  readonly id:
-    | "autoBrowser"
-    | "contextInChat"
-    | "contextFullWindow"
-    | "usageFromChat"
-    | "openChrome"
-    | "restartChromeOnError"
-    | "hideSessionManager";
+  readonly id: "autoBrowser" | "contextInChat" | "contextFullWindow" | "usageFromChat" | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "extension.js";
   readonly find: RegExp;
@@ -67,27 +60,6 @@ export const PATCHES: readonly Patch[] = [
     marker: "/*claude-maia-usage*/"
   },
   {
-    id: "openChrome",
-    title: "abre o Chrome antes de conectar o navegador, se ele não estiver rodando",
-    file: "extension.js",
-    // lado Node da extensão: o método que liga o Claude in Chrome (o da subclasse, que checa a plataforma)
-    find: /async ensureChromeMcpEnabled\(([\w$]+)\)\{if\(process\.platform==="darwin"\|\|process\.platform==="win32"\|\|process\.platform==="linux"\)\{/,
-    replace:
-      'async ensureChromeMcpEnabled($1){/*claude-maia-chrome*/try{const cp=require("child_process"),pl=process.platform,running=()=>{try{if(pl==="darwin")return cp.execSync("pgrep -x \'Google Chrome\'",{stdio:"pipe"}).toString().trim()!=="";if(pl==="win32")return cp.execSync("tasklist /NH",{stdio:"pipe"}).toString().toLowerCase().includes("chrome.exe");return cp.execSync("pgrep -x chrome || pgrep -x google-chrome || pgrep -x chromium",{stdio:"pipe"}).toString().trim()!==""}catch(_){return false}};if(!running()){if(pl==="darwin")cp.execSync("open -a \'Google Chrome\'");else if(pl==="win32")cp.execSync("start chrome",{shell:"cmd.exe"});else cp.spawn("google-chrome",[],{detached:true,stdio:"ignore"}).unref();await new Promise(r=>setTimeout(r,3500))}}catch(_){}if(process.platform==="darwin"||process.platform==="win32"||process.platform==="linux"){',
-    marker: "/*claude-maia-chrome*/"
-  },
-  {
-    id: "restartChromeOnError",
-    title: 'se o chat receber "Browser extension is not connected", fecha e abre o Chrome sozinho (1x por minuto)',
-    file: "extension.js",
-    // mesmo ponto por onde passam as mensagens do CLI (o que vem antes do rate_limit_event)
-    find: /this\.send\(\{type:"io_message",channelId:([\w$]+),message:([\w$]+),done:!1\}\),(?=\2\.type==="rate_limit_event")/,
-    replace:
-      '(function(m){try{if(JSON.stringify(m).includes("Browser extension is not connected")){var g=globalThis;if(!g.__maiaChromeAt||Date.now()-g.__maiaChromeAt>60000){g.__maiaChromeAt=Date.now();var cp=require("child_process"),pl=process.platform;setTimeout(function(){try{if(pl==="darwin"){try{cp.execSync("osascript -e \'quit app \\"Google Chrome\\"\'",{stdio:"pipe"})}catch(_){}setTimeout(function(){try{cp.execSync("open -a \'Google Chrome\'")}catch(_){}},2500)}else if(pl==="win32"){try{cp.execSync("taskkill /IM chrome.exe /F",{stdio:"pipe"})}catch(_){}setTimeout(function(){try{cp.execSync("start chrome",{shell:"cmd.exe"})}catch(_){}},2500)}else{try{cp.execSync("pkill -x chrome || pkill -x google-chrome || true",{stdio:"pipe"})}catch(_){}setTimeout(function(){try{cp.spawn("google-chrome",[],{detached:true,stdio:"ignore"}).unref()}catch(_){}},2500)}}catch(_){}},0)}}}catch(_){}})($2)/*claude-maia-restart*/,' +
-      'this.send({type:"io_message",channelId:$1,message:$2,done:!1}),',
-    marker: "/*claude-maia-restart*/"
-  },
-  {
     id: "hideSessionManager",
     title: "esconde a barra lateral Session Manager da extensão oficial",
     file: "extension.js",
@@ -96,36 +68,6 @@ export const PATCHES: readonly Patch[] = [
     marker: '"claude-vscode.sessionsListEnabled",!1/*claude-maia*/'
   }
 ];
-
-const CLAUDE_MD_PATH = path.join(os.homedir(), ".claude", "CLAUDE.md");
-const CHROME_NOTE_MARKER = 'Se der "Browser extension is not connected"';
-const CHROME_NOTE =
-  '- **Se der "Browser extension is not connected":** a Claude Maia já reabre o Chrome sozinha (patches `openChrome`/`restartChromeOnError`, até 1x/min). Não rode `osascript`/`pgrep` nem leia skill pra isso, só espere ~4s e repita a chamada.';
-
-/** Garante que o CLAUDE.md explica o auto-reconnect do Chrome, senão o Claude Code
- * tenta consertar na mão (osascript, skill) achando que o problema é dele resolver. */
-export function ensureClaudeMdChromeNote(log: (msg: string) => void): void {
-  try {
-    if (!fs.existsSync(CLAUDE_MD_PATH)) {
-      return;
-    }
-    const content = fs.readFileSync(CLAUDE_MD_PATH, "utf8");
-    if (content.includes(CHROME_NOTE_MARKER)) {
-      return;
-    }
-    const lines = content.split("\n");
-    const idx = lines.findIndex((l) => l.trim().startsWith("- **Extensão Claude in Chrome"));
-    if (idx === -1) {
-      log("[claude.md] seção do navegador não encontrada, não mexi");
-      return;
-    }
-    lines.splice(idx + 1, 0, CHROME_NOTE);
-    fs.writeFileSync(CLAUDE_MD_PATH, lines.join("\n"));
-    log("[claude.md] nota do auto-reconnect do Chrome adicionada");
-  } catch (err) {
-    log(`[claude.md] não deu pra checar/atualizar (${String(err)})`);
-  }
-}
 
 export interface PatchResult {
   readonly extensionDir: string | undefined;
@@ -253,7 +195,6 @@ export function restoreOriginals(): string[] {
 export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: string) => void): void {
   let installing = false;
   const run = async (interactive: boolean) => {
-    ensureClaudeMdChromeNote(log);
     if (!vscode.workspace.getConfiguration("claudeMaia").get<boolean>("patchClaudeCode", true) && !interactive) {
       return;
     }

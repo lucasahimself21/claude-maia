@@ -44,12 +44,6 @@ export function getWebviewStyles(): string {
       background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.1));
     }
 
-    .tree-row.focused {
-      background: var(--vscode-list-focusBackground, var(--vscode-list-hoverBackground));
-      outline: 1px solid var(--vscode-focusBorder, transparent);
-      outline-offset: -1px;
-    }
-
     .tree-row.selected {
       background: var(--vscode-list-activeSelectionBackground, #094771);
       color: var(--vscode-list-activeSelectionForeground, #fff);
