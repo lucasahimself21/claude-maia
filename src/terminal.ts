@@ -1,7 +1,7 @@
 import { execFile, exec } from "child_process";
 import { promisify } from "util";
 import * as vscode from "vscode";
-import { findTerminalForPid, readLiveSessions } from "./liveSessions";
+import { findTerminalForPid, readIdeTabTitles, readLiveSessions, tabLabelMatches } from "./liveSessions";
 import { SessionNode } from "./models";
 
 const execFileAsync = promisify(execFile);
@@ -108,6 +108,15 @@ function awaitCommandStart(
   });
 }
 
+/** Leva o editor ativo pra um grupo NOVO no fim, à direita de todos. `moveEditorToRightGroup`
+ * só cria grupo quando não existe um à direita; com dois chats abertos ele juntava o novo no vizinho. */
+export async function moveActiveEditorToNewGroupAtRight(): Promise<void> {
+  await vscode.commands.executeCommand("workbench.action.moveEditorToLastGroup");
+  await vscode.commands.executeCommand("workbench.action.newGroupRight");
+  await vscode.commands.executeCommand("workbench.action.focusPreviousGroup");
+  await vscode.commands.executeCommand("workbench.action.moveEditorToNextGroup");
+}
+
 export class ClaudeTerminalService {
   public constructor(private readonly outputChannel: vscode.OutputChannel) {}
 
@@ -120,10 +129,11 @@ export class ClaudeTerminalService {
         this.outputChannel.appendLine(`[ide] Opening session ${session.sessionId} in Claude Code extension.`);
         // mesmos args do atalho Cmd+Shift+0 (só o id): segue o "preferredLocation" da extensão,
         // senão abre no layout antigo (fullEditor) com outro visual
+        // aba já aberta (título casa, mesmo truncado): o open só foca; senão abre e vai pra um grupo novo
+        const tabOpen = [...readIdeTabTitles().keys()].some((label) => tabLabelMatches(label, session.title));
         await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
-        // sessão nova: vai pra um grupo próprio à direita (igual ao Cmd+Shift+0); já aberta: só foca
-        if (!live) {
-          await vscode.commands.executeCommand("workbench.action.moveEditorToRightGroup");
+        if (!tabOpen) {
+          await moveActiveEditorToNewGroupAtRight();
         }
         return;
       }
