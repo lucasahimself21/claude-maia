@@ -49,11 +49,12 @@ export type ExtensionToWebviewMessage =
   | { type: "startRename"; sessionId: string }
   | { type: "cancelRename" }
   | { type: "focusSearch" }
-  | { type: "updateAvailable"; version: string | undefined };
+  | { type: "updateAvailable"; version: string | undefined; mode?: "update" | "reload" };
 
 // Webview → Extension
 export type WebviewToExtensionMessage =
   | { type: "update" }
+  | { type: "reloadWindow" }
   | { type: "selectFromContext"; sessionId: string }
   | { type: "openSession"; sessionId: string }
   | { type: "openSessionDangerously"; sessionId: string }

@@ -36,7 +36,12 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
     });
     void vscode.commands.executeCommand("claudeMaia.checkUpdateQuiet");
     setTimeout(
-      () => this.webviewView?.webview.postMessage({ type: "updateAvailable", version: this.updateVersion }),
+      () =>
+        this.webviewView?.webview.postMessage({
+          type: "updateAvailable",
+          version: this.updateVersion,
+          mode: this.updateMode
+        }),
       500
     );
 
@@ -91,10 +96,12 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
   }
 
   private updateVersion: string | undefined;
-  /** Mostra (ou esconde, com undefined) o botão de atualizar no rodapé da view. */
-  public setUpdateAvailable(version: string | undefined): void {
+  private updateMode: "update" | "reload" = "update";
+  /** Mostra (ou esconde, com undefined) o botão do rodapé: "Atualizar pra vX" ou "Recarregar pra ativar vX". */
+  public setUpdateAvailable(version: string | undefined, mode: "update" | "reload" = "update"): void {
     this.updateVersion = version;
-    void this.webviewView?.webview.postMessage({ type: "updateAvailable", version });
+    this.updateMode = mode;
+    void this.webviewView?.webview.postMessage({ type: "updateAvailable", version, mode });
   }
 
   public postFocusSearch(): void {
@@ -113,6 +120,10 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
     switch (msg.type) {
       case "update":
         await vscode.commands.executeCommand("claudeMaia.update");
+        break;
+
+      case "reloadWindow":
+        await vscode.commands.executeCommand("workbench.action.reloadWindow");
         break;
 
       case "openSession": {

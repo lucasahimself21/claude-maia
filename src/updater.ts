@@ -17,6 +17,7 @@ interface Release {
 }
 
 let latest: Release | undefined;
+let installedPending: string | undefined;
 
 function parseVersion(v: string): number[] {
   return v
@@ -49,7 +50,7 @@ async function fetchLatest(): Promise<Release | undefined> {
 export function setupUpdater(
   context: vscode.ExtensionContext,
   log: (msg: string) => void,
-  onAvailable: (version: string | undefined) => void
+  onAvailable: (version: string | undefined, mode?: "update" | "reload") => void
 ): void {
   const current = (context.extension.packageJSON as { version: string }).version;
   let notified = false;
@@ -66,6 +67,10 @@ export function setupUpdater(
     } catch (err) {
       log(`[update] falha ao consultar releases: ${String(err)}`);
       latest = undefined;
+    }
+    if (installedPending) {
+      onAvailable(installedPending, "reload"); // já baixada: só falta recarregar
+      return;
     }
     const available =
       latest !== undefined && newer(latest.tag_name, current) && latest.assets.some((a) => a.name.endsWith(".vsix"));
@@ -115,7 +120,8 @@ export function setupUpdater(
       }
     );
     await vscode.commands.executeCommand("setContext", "claudeMaia.updateAvailable", false);
-    onAvailable(undefined);
+    installedPending = tag;
+    onAvailable(tag, "reload"); // botão do rodapé vira "Recarregar pra ativar vX"
     const choice = await vscode.window.showInformationMessage(
       `Claude Maia ${tag} instalada. Recarregue a janela.`,
       "Reload Window"

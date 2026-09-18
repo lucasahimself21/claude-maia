@@ -141,9 +141,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   setupUpdater(
     context,
     (msg) => outputChannel.appendLine(msg),
-    (version) => {
-      explorerProvider.setUpdateAvailable(version);
-      sidebarProvider.setUpdateAvailable(version);
+    (version, mode) => {
+      explorerProvider.setUpdateAvailable(version, mode);
+      sidebarProvider.setUpdateAvailable(version, mode);
     }
   );
   context.subscriptions.push(

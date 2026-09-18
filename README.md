@@ -14,7 +14,7 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
 
 **Instalar**: baixe o `.vsix` da [última release](https://github.com/lucasahimself21/claude-maia/releases/latest) e rode `code --install-extension claude-maia-<versão>.vsix` (ou, no VS Code, Extensions → `...` → Install from VSIX). Precisa da extensão oficial [Claude Code for VS Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) instalada e logada. macOS (o uso do plano lê o token no Keychain).
 
-**Atualizar**: a extensão confere o GitHub Releases ao abrir, sempre que a view "Claude Maia" aparece (no máximo 1 vez a cada 2 min) e a cada 6 h; quando tem versão nova aparece um botão "Atualizar Claude Maia pra vX" no rodapé da view (e um aviso). Clicou, baixa e instala sozinha; só recarregar a janela. Comando manual: "Claude Maia: procurar atualização".
+**Atualizar**: a extensão confere o GitHub Releases ao abrir, sempre que a view "Claude Maia" aparece (no máximo 1 vez a cada 2 min) e a cada 6 h; quando tem versão nova aparece um botão "Atualizar Claude Maia pra vX" no rodapé da view (e um aviso). Clicou, baixa e instala sozinha e o botão vira "Recarregar pra ativar vX". Comando manual: "Claude Maia: procurar atualização".
 
 **Desenvolver**: `npm install && npm run compile && npx @vscode/vsce package`. Publicar: `gh release create v<versão> claude-maia-<versão>.vsix --title v<versão> --notes "..."`.
 

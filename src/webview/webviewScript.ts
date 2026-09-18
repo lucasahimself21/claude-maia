@@ -11,7 +11,9 @@ export function getWebviewScript(): string {
       const container = document.getElementById('tree-container');
       const updateBtn = document.getElementById('update-btn');
       if (updateBtn) {
-        updateBtn.addEventListener('click', () => { vscode.postMessage({ type: 'update' }); });
+        updateBtn.addEventListener('click', () => {
+          vscode.postMessage({ type: updateBtn.dataset.mode === 'reload' ? 'reloadWindow' : 'update' });
+        });
       }
       const tooltipEl = document.getElementById('custom-tooltip');
       const searchContainer = document.querySelector('.search-container');
@@ -490,7 +492,8 @@ export function getWebviewScript(): string {
           const btn = document.getElementById('update-btn');
           if (btn) {
             btn.hidden = !msg.version;
-            btn.textContent = msg.version ? 'Atualizar Claude Maia pra ' + msg.version : '';
+            btn.dataset.mode = msg.mode || 'update';
+            btn.textContent = !msg.version ? '' : (msg.mode === 'reload' ? 'Recarregar pra ativar ' + msg.version : 'Atualizar Claude Maia pra ' + msg.version);
             document.body.classList.toggle('has-update', !!msg.version);
           }
         } else if (msg.type === 'startRename') {
