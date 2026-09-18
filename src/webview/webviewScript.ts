@@ -474,6 +474,10 @@ export function getWebviewScript(): string {
           if (state.checkedSessionIds.length === 0) {
             lastCheckedIndex = -1;
           }
+          // renomeando: redesenhar destruía o input (e o blur fechava a edição); Enter/Esc redesenham depois
+          if (renamingSessionId) {
+            return;
+          }
           // Preserve focus index within bounds
           const allRowCount = container.querySelectorAll('.tree-row').length;
           if (focusedIndex >= allRowCount) {
