@@ -2,21 +2,19 @@
 
 Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS Code" da Anthropic:
 
-- **Sessões**: lista plana das sessões do Claude Code (de `~/.claude/projects`) no Explorer. Clique abre a sessão no chat da extensão oficial (ou foca, se já estiver aberta). Bolinha verde nas sessões abertas (terminal ou chat da IDE; pulsa enquanto responde), sessão em foco fica selecionada, renomear e apagar no hover; botão direito numa sessão entra no modo de seleção e marca ela; no modo, botão direito marca/desmarca, shift+clique marca o intervalo, clique esquerdo simples ou Esc saem do modo; a sessão cujo chat está em foco fica destacada. Fork de [vscode-claude-sessions](https://github.com/ShahadIshraq/claude-session-vs-code-extension).
+- **Sessões**: lista plana das sessões do Claude Code (de `~/.claude/projects`) no Explorer. Clique abre a sessão no chat da extensão oficial (ou foca, se já estiver aberta). Bolinha verde nas sessões abertas (terminal ou chat da IDE; pulsa enquanto responde), a sessão cujo chat está em foco fica destacada (com dois chats de mesmo título, a de escrita mais recente), renomear e apagar no hover; caixinha em cada linha pra marcar (shift+clique marca o intervalo, Esc desmarca tudo) e apagar em lote pelo ícone da lixeira no título da view. Fork de [vscode-claude-sessions](https://github.com/ShahadIshraq/claude-session-vs-code-extension).
 - **Uso do plano na barra inferior**: `5h 32%/40% (2h51m) | 7d 46%/57% (3h11m)`, igual à status line do terminal (usado/cota do tempo já passado, tempo pra resetar; verde abaixo da cota, amarelo acima). Vem do próprio chat: a cada resposta a extensão oficial recebe o uso e (patch) grava em `~/.claude/claude-maia-usage.json`; a barra lê dali na hora, sem request. Só se o chat ficar 10 min sem mandar uso ela consulta o endpoint `/api/oauth/usage` com o token do Keychain.
 - **Patches automáticos na extensão oficial** (`~/.vscode/extensions/anthropic.claude-code-*/`), reaplicados ao ativar, de hora em hora e quando ela atualiza; cada um desligável nas configurações (`claudeMaia.patch.*`):
   1. navegador (Claude in Chrome) conecta sozinho em toda mensagem, como se ela tivesse `@browser` (se já estiver conectado, não faz nada);
   2. `Ctx 36% (363k/1000k)` sempre visível no rodapé do chat, cores da status line (200k amarelo, 400k vermelho);
   3. o `Ctx` conta sobre a janela inteira do modelo (1000k), igual à status line, em vez da janela útil antes do auto-compact (923k);
   4. grava o uso do plano recebido a cada resposta em `~/.claude/claude-maia-usage.json` (alimenta a barra sem request);
-  5. abre o Chrome antes de conectar o navegador, se ele não estiver rodando (Mac/Windows/Linux);
-  6. se o chat receber "Browser extension is not connected", fecha e abre o Chrome sozinho (1x por minuto); é só mandar a mensagem de novo;
-  7. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
+  5. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
      Original guardado em `<arquivo>.orig`; comandos "Claude Maia: reaplicar patches" e "restaurar a extensão original". Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
 
 **Instalar**: baixe o `.vsix` da [última release](https://github.com/lucasahimself21/claude-maia/releases/latest) e rode `code --install-extension claude-maia-<versão>.vsix` (ou, no VS Code, Extensions → `...` → Install from VSIX). Se a extensão oficial [Claude Code for VS Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) não estiver instalada, a Claude Maia instala ela do marketplace e aplica os patches; só falta logar. macOS e Windows.
 
-**Atualizar**: a extensão confere o GitHub Releases ao abrir, sempre que a view "Claude Maia" aparece (no máximo 1 vez a cada 2 min) e a cada 6 h; quando tem versão nova aparece um botão "Atualizar Claude Maia pra vX" no rodapé da view (e um aviso). Clicou, baixa e instala sozinha e o botão vira "Recarregar pra ativar vX". Comando manual: "Claude Maia: procurar atualização". Se o chat disser "Browser extension is not connected", a extensão reinicia o Chrome sozinha; também dá pra forçar com "Claude Maia: reiniciar o Chrome".
+**Atualizar**: a extensão confere o GitHub Releases ao abrir, sempre que a view "Claude Maia" aparece (no máximo 1 vez a cada 2 min) e a cada 6 h; quando tem versão nova aparece um botão "Atualizar Claude Maia pra vX" no rodapé da view (e um aviso). Clicou, baixa e instala sozinha e o botão vira "Recarregar pra ativar vX". Comando manual: "Claude Maia: procurar atualização". Se o chat disser "Browser extension is not connected", o comando "Claude Maia: reiniciar o Chrome" fecha e abre o Chrome (o Claude Code também sabe fazer isso sozinho, pelo CLAUDE.md).
 
 **Desenvolver**: `npm install && npm run compile && npx @vscode/vsce package`. Publicar: `gh release create v<versão> claude-maia-<versão>.vsix --title v<versão> --notes "..."`.
 
@@ -36,24 +34,23 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
   - `claude --dangerously-skip-permissions --resume <sessionId>`
   - protected by a confirmation modal (configurable via `claudeSessions.confirmDangerousSkipPermissions`)
 - `Rename Session` action (edit icon): give any session a custom title.
-  - Right-click a session and choose `Rename Session`, or use the edit icon on hover.
+  - Use the edit icon on hover, or `F2` when a session is focused.
   - The custom title is stored inside the transcript file as a `custom-title` record.
   - Renaming preserves the session's original timestamp, so it stays in its sorted position.
 - `Delete Session` action: permanently remove a session transcript and all associated data.
-  - Right-click a session and choose `Delete Session`.
+  - Use the trash icon on hover.
   - Keyboard shortcut: `Delete` (Windows/Linux) or `Cmd+Backspace` (Mac) when a session is focused.
-- `Selection Mode` for bulk operations:
-  - Toggle via the checklist icon in the view title bar.
-  - Checkboxes appear on all sessions — check the ones you want to act on.
-  - A trash icon appears once any session is checked; click it to delete all checked sessions.
-  - Selection mode is automatically cleared after deletion or refresh.
+- Checkboxes for bulk operations:
+  - Every session row has a checkbox; check the ones you want to act on (`Space` toggles the focused row, shift+click marks a range, `Esc` unchecks all).
+  - A trash icon appears in the view title bar once any session is checked; click it to delete all checked sessions.
+  - Checks are cleared after deletion or refresh.
 - `Search Sessions` command: filter sessions by keyword across all prompt content.
   - Active filter is shown as a tree node with a hover X to clear it.
   - The search icon is hidden while a filter is active to reduce clutter.
 - `Clear Filter` command: reset the search filter and show all sessions.
 - `Refresh Claude Sessions` command.
   - Re-runs the active search filter against fresh data if one is set.
-  - Clears selection mode.
+  - Clears any checked sessions.
 - `Focus Claude Sessions View` command.
 
 ## Configuration
@@ -84,13 +81,13 @@ Expand a session to see prompts and timestamps. Click the green or red terminal 
 
 ### Rename a session
 
-Right-click a session and select `Rename Session` to give it a custom title. The new title replaces the auto-generated one in the tree view. Renaming preserves the session's original timestamp so it stays in its sorted position.
+Use the edit icon on hover (or `F2`) to give a session a custom title. The new title replaces the auto-generated one in the tree view. Renaming preserves the session's original timestamp so it stays in its sorted position.
 
 ### Delete sessions
 
-Right-click a session and select `Delete Session` to permanently remove it and all associated data (subagents, environment snapshots, file history, debug logs, and tasks). You can also use `Delete` / `Cmd+Backspace` when a session is focused.
+Use the trash icon on hover to permanently remove a session and all associated data (subagents, environment snapshots, file history, debug logs, and tasks). You can also use `Delete` / `Cmd+Backspace` when a session is focused.
 
-For bulk deletion, click the checklist icon in the title bar to enter selection mode. Checkboxes appear on every session — check the ones you want to remove, then click the trash icon. A confirmation dialog shows how many sessions will be deleted.
+For bulk deletion, check the sessions you want to remove (shift+click marks a range), then click the trash icon in the title bar. A confirmation dialog shows how many sessions will be deleted.
 
 ### Search sessions
 

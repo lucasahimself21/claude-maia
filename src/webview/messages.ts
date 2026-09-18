@@ -37,7 +37,6 @@ export interface WebviewWorkspaceGroup {
 export interface WebviewTreeState {
   readonly workspaces: WebviewWorkspaceGroup[];
   readonly filterQuery: string | undefined;
-  readonly selectionMode: boolean;
   readonly checkedSessionIds: string[];
   readonly expandedWorkspaces: string[];
   readonly expandedSessions: string[];
@@ -55,8 +54,7 @@ export type ExtensionToWebviewMessage =
 export type WebviewToExtensionMessage =
   | { type: "update" }
   | { type: "reloadWindow" }
-  | { type: "checkOnly"; sessionId: string }
-  | { type: "exitSelection" }
+  | { type: "clearChecked" }
   | { type: "openSession"; sessionId: string }
   | { type: "openSessionDangerously"; sessionId: string }
   | { type: "renameSession"; sessionId: string; newTitle: string }

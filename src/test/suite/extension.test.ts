@@ -155,14 +155,6 @@ describe("command guard smoke tests", () => {
     }
   });
 
-  it("claudeSessions.toggleSelectionMode does not throw an unhandled error", async () => {
-    try {
-      await vscode.commands.executeCommand("claudeSessions.toggleSelectionMode");
-    } catch {
-      // Commands may throw or show error messages; neither is an unhandled crash
-    }
-  });
-
   it("claudeSessions.clearFilter does not throw an unhandled error", async () => {
     try {
       await vscode.commands.executeCommand("claudeSessions.clearFilter");

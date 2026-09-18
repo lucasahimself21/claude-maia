@@ -63,8 +63,6 @@ export async function confirmAndDeleteSessions(
   }
 
   stateManager.clearChecked();
-  stateManager.setSelectionMode(false);
-  vscode.commands.executeCommand("setContext", "claudeSessions.selectionMode", false);
   vscode.commands.executeCommand("setContext", "claudeSessions.hasCheckedSessions", false);
   await stateManager.refresh();
 

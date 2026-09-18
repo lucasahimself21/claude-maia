@@ -194,9 +194,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         stateManager.setFilter(activeQuery, matchingIds);
       }
 
-      // Clear selection mode
-      stateManager.setSelectionMode(false);
-      vscode.commands.executeCommand("setContext", "claudeSessions.selectionMode", false);
+      stateManager.clearChecked();
       vscode.commands.executeCommand("setContext", "claudeSessions.hasCheckedSessions", false);
     })
   );
@@ -257,17 +255,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       explorerProvider.postStartRename(session.sessionId);
       sidebarProvider.postStartRename(session.sessionId);
-    })
-  );
-
-  // Toggle selection mode
-  context.subscriptions.push(
-    vscode.commands.registerCommand("claudeSessions.toggleSelectionMode", () => {
-      const entering = !stateManager.selectionMode;
-      stateManager.clearChecked();
-      stateManager.setSelectionMode(entering);
-      vscode.commands.executeCommand("setContext", "claudeSessions.selectionMode", entering);
-      vscode.commands.executeCommand("setContext", "claudeSessions.hasCheckedSessions", false);
     })
   );
 

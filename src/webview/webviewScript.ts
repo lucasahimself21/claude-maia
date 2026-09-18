@@ -294,26 +294,19 @@ export function getWebviewScript(): string {
         if (type === 'workspace') {
           vscode.postMessage({ type: 'toggleWorkspaceExpand', workspaceUri: row.dataset.uri });
         } else if (type === 'session') {
-          if (state && state.selectionMode) {
-            if (e.shiftKey && lastCheckedIndex !== -1) {
-              var rangeStart = Math.min(lastCheckedIndex, focusedIndex);
-              var rangeEnd = Math.max(lastCheckedIndex, focusedIndex);
-              var sessionIds = allRows
-                .slice(rangeStart, rangeEnd + 1)
-                .filter(function(r) { return r.dataset.type === 'session'; })
-                .map(function(r) { return r.dataset.sessionId; });
-              vscode.postMessage({ type: 'rangeCheck', sessionIds: sessionIds });
-            } else {
-              // clique esquerdo simples no modo de seleção = sair do modo (igual Esc)
-              vscode.postMessage({ type: 'exitSelection' });
-            }
+          if (e.shiftKey && lastCheckedIndex !== -1) {
+            // shift+clique depois de uma caixinha marca o intervalo
+            var rangeStart = Math.min(lastCheckedIndex, focusedIndex);
+            var rangeEnd = Math.max(lastCheckedIndex, focusedIndex);
+            var sessionIds = allRows
+              .slice(rangeStart, rangeEnd + 1)
+              .filter(function(r) { return r.dataset.type === 'session'; })
+              .map(function(r) { return r.dataset.sessionId; });
+            vscode.postMessage({ type: 'rangeCheck', sessionIds: sessionIds });
+          } else if (target.closest('.twistie')) {
+            vscode.postMessage({ type: 'toggleSessionExpand', sessionId: row.dataset.sessionId });
           } else {
-            // Click on twistie toggles expand, else open session
-            if (target.closest('.twistie')) {
-              vscode.postMessage({ type: 'toggleSessionExpand', sessionId: row.dataset.sessionId });
-            } else {
-              vscode.postMessage({ type: 'openSession', sessionId: row.dataset.sessionId });
-            }
+            vscode.postMessage({ type: 'openSession', sessionId: row.dataset.sessionId });
           }
         } else if (type === 'prompt') {
           vscode.postMessage({
@@ -444,7 +437,7 @@ export function getWebviewScript(): string {
         } else if (e.key === ' ') {
           e.preventDefault();
           const row = allRows[focusedIndex];
-          if (row && row.dataset.type === 'session' && state && state.selectionMode) {
+          if (row && row.dataset.type === 'session') {
             vscode.postMessage({ type: 'toggleCheck', sessionId: row.dataset.sessionId });
             lastCheckedIndex = focusedIndex;
           }
@@ -466,8 +459,9 @@ export function getWebviewScript(): string {
             renamingSessionId = null;
             vscode.postMessage({ type: 'renameCancelled' });
             render();
-          } else if (state && state.selectionMode) {
-            vscode.postMessage({ type: 'exitSelection' });
+          } else {
+            vscode.postMessage({ type: 'clearChecked' });
+            lastCheckedIndex = -1;
           }
         }
       });
@@ -476,9 +470,8 @@ export function getWebviewScript(): string {
       window.addEventListener('message', (event) => {
         const msg = event.data;
         if (msg.type === 'updateState') {
-          var prevSelectionMode = state && state.selectionMode;
           state = msg.state;
-          if (prevSelectionMode && !state.selectionMode) {
+          if (state.checkedSessionIds.length === 0) {
             lastCheckedIndex = -1;
           }
           // Preserve focus index within bounds

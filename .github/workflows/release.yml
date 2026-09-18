@@ -23,39 +23,6 @@ jobs:
           name: vsix
           path: "*.vsix"
 
-  publish-ms-marketplace:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
-      - run: npx vsce publish
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-
-  publish-openvsx:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: vsix
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - run: npx ovsx publish *.vsix
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-
   github-release:
     needs: build
     runs-on: ubuntu-latest

@@ -15,7 +15,6 @@ export class SessionTreeStateManager {
   private globalInfoMessage: string | undefined;
   private filterQuery: string | undefined;
   private filteredSessionIds: Set<string> | undefined;
-  private _selectionMode = false;
   private checkedSessionIds = new Set<string>();
   private expandedWorkspaces = new Set<string>();
   private expandedSessions = new Set<string>();
@@ -25,10 +24,6 @@ export class SessionTreeStateManager {
   private fireTimeout: ReturnType<typeof setTimeout> | undefined;
 
   public constructor(private readonly discoveryService: ISessionDiscoveryService) {}
-
-  public get selectionMode(): boolean {
-    return this._selectionMode;
-  }
 
   public getFilterQuery(): string | undefined {
     return this.filterQuery;
@@ -81,14 +76,6 @@ export class SessionTreeStateManager {
   public setFilter(query: string | undefined, matchingSessionIds: Set<string> | undefined): void {
     this.filterQuery = query;
     this.filteredSessionIds = matchingSessionIds;
-    this.scheduleStateChange();
-  }
-
-  public setSelectionMode(enabled: boolean): void {
-    this._selectionMode = enabled;
-    if (!enabled) {
-      this.checkedSessionIds.clear();
-    }
     this.scheduleStateChange();
   }
 
@@ -146,14 +133,17 @@ export class SessionTreeStateManager {
   }
 
   /** Sessão pelo título da aba (a extensão Claude Code nomeia a aba com o título da sessão). */
+  /** Sessão com esse título; se houver mais de uma (dois chats "Google"), a de escrita mais recente. */
   public getSessionByTitle(title: string): SessionNode | undefined {
+    let best: SessionNode | undefined;
     for (const sessions of this.sessionsByWorkspace.values()) {
-      const found = sessions.find((s) => s.title === title);
-      if (found) {
-        return found;
+      for (const s of sessions) {
+        if (s.title === title && (!best || s.updatedAt > best.updatedAt)) {
+          best = s;
+        }
       }
     }
-    return undefined;
+    return best;
   }
 
   public getSessionById(sessionId: string): SessionNode | undefined {
@@ -227,6 +217,16 @@ export class SessionTreeStateManager {
 
       const liveSessions = readLiveSessions();
       const ideTabs = readIdeTabTitles();
+      // N abas abertas com um título = as N sessões desse título de escrita mais recente estão abertas
+      // (sem isso, dois chats "Google" acendiam a bolinha nos dois com uma aba só)
+      const titleRank = new Map<string, number>();
+      const seenTitles = new Map<string, number>();
+      for (const s of [...sessions].sort((a, b) => b.updatedAt - a.updatedAt)) {
+        const n = seenTitles.get(s.title) ?? 0;
+        titleRank.set(s.sessionId, n);
+        seenTitles.set(s.title, n + 1);
+      }
+      const openInIde = (s: SessionNode) => (titleRank.get(s.sessionId) ?? 0) < (ideTabs.get(s.title) ?? 0);
       const sessionItems: WebviewSessionItem[] = [];
       for (const session of sessions) {
         // só a sessão expandida precisa dos prompts: parsear o transcript de todas a cada
@@ -266,9 +266,9 @@ export class SessionTreeStateManager {
 
         let live = liveSessions.get(session.sessionId);
         // aba do chat aberta = viva na IDE (instantâneo; o processo pode demorar a aparecer/sumir)
-        if (!live && ideTabs.has(session.title)) {
+        if (!live && openInIde(session)) {
           live = { pid: 0, updatedAt: 0, source: "ide" };
-        } else if (live?.source === "ide" && !ideTabs.has(session.title) && live.pid > 0) {
+        } else if (live?.source === "ide" && !openInIde(session) && live.pid > 0) {
           live = undefined; // aba fechada, processo ainda morrendo
         }
         const lastUsed = Math.max(session.updatedAt, live?.updatedAt ?? 0);
@@ -333,7 +333,6 @@ export class SessionTreeStateManager {
     return {
       workspaces,
       filterQuery: this.filterQuery,
-      selectionMode: this._selectionMode,
       checkedSessionIds: Array.from(this.checkedSessionIds),
       expandedWorkspaces: Array.from(this.expandedWorkspaces),
       expandedSessions: Array.from(this.expandedSessions)

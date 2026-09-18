@@ -56,30 +56,21 @@ function createMockDiscovery(prompts: SessionPrompt[] = []): MockDiscovery {
 
 function createMockStateManager(discovery: ISessionDiscoveryService): SessionTreeStateManager & {
   clearCheckedCalled: boolean;
-  setSelectionModeArgs: boolean[];
   refreshCalled: boolean;
 } {
   const manager = new SessionTreeStateManager(discovery) as SessionTreeStateManager & {
     clearCheckedCalled: boolean;
-    setSelectionModeArgs: boolean[];
     refreshCalled: boolean;
   };
 
   manager.clearCheckedCalled = false;
-  manager.setSelectionModeArgs = [];
   manager.refreshCalled = false;
 
   const origClearChecked = manager.clearChecked.bind(manager);
-  const origSetSelectionMode = manager.setSelectionMode.bind(manager);
 
   manager.clearChecked = () => {
     manager.clearCheckedCalled = true;
     origClearChecked();
-  };
-
-  manager.setSelectionMode = (enabled: boolean) => {
-    manager.setSelectionModeArgs.push(enabled);
-    origSetSelectionMode(enabled);
   };
 
   manager.refresh = async () => {
