@@ -342,6 +342,27 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const mapTick = setInterval(mapLive, 10000);
     context.subscriptions.push({ dispose: () => clearInterval(mapTick) });
 
+    // sessão cujo terminal está em foco fica selecionada na lista
+    const updateActive = () => {
+      const active = vscode.window.activeTerminal;
+      const shell = active ? shellPids.get(active) : undefined;
+      let activeId: string | undefined;
+      if (shell) {
+        const known = new Set(shellPids.values());
+        for (const [sessionId, info] of readLiveSessions()) {
+          if (shellPidOf(info.pid, known) === shell) {
+            activeId = sessionId;
+            break;
+          }
+        }
+      }
+      stateManager.setActiveSession(activeId);
+    };
+    context.subscriptions.push(vscode.window.onDidChangeActiveTerminal(updateActive));
+    context.subscriptions.push(stateManager.onDidChangeState(updateActive));
+    const activeTick = setInterval(updateActive, 2000);
+    context.subscriptions.push({ dispose: () => clearInterval(activeTick) });
+
     // aba do terminal = nome da sessão na lista (renomeia quando divergir e confere o resultado)
     let syncing = false;
     const syncTerminalNames = async () => {

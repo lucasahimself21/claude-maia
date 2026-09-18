@@ -150,7 +150,7 @@ export function getWebviewScript(): string {
               '</span>';
 
             rows.push(
-              '<div class="tree-row' + (focusedIndex === rows.length ? ' focused' : '') + '" ' +
+              '<div class="tree-row' + (focusedIndex === rows.length ? ' focused' : '') + (session.active ? ' selected' : '') + '" ' +
               'data-depth="0" data-type="session" data-session-id="' + escapeHtml(session.sessionId) + '" ' +
               '>' +
               checkboxHtml +

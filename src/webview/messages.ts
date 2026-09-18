@@ -22,6 +22,8 @@ export interface WebviewSessionItem {
   readonly updatedAt: number;
   readonly lastUsed: number;
   readonly live?: "busy" | "idle";
+  /** terminal dessa sessão é o que está em foco */
+  readonly active?: boolean;
   readonly prompts?: WebviewPromptItem[];
 }
 

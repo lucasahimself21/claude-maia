@@ -19,6 +19,7 @@ export class SessionTreeStateManager {
   private expandedSessions = new Set<string>();
   private promptsCache = new Map<string, SessionPrompt[]>();
   private hasLoaded = false;
+  private activeSessionId: string | undefined;
   private fireTimeout: ReturnType<typeof setTimeout> | undefined;
 
   public constructor(private readonly discoveryService: ISessionDiscoveryService) {}
@@ -29,6 +30,15 @@ export class SessionTreeStateManager {
 
   public getFilterQuery(): string | undefined {
     return this.filterQuery;
+  }
+
+  /** Marca a sessão cujo terminal está em foco (só re-renderiza se mudou). */
+  public setActiveSession(sessionId: string | undefined): void {
+    if (sessionId === this.activeSessionId) {
+      return;
+    }
+    this.activeSessionId = sessionId;
+    this._onDidChangeState.fire();
   }
 
   /** Re-renderiza com o estado atual (bolinha/tempo) sem reler os transcripts. */
@@ -233,6 +243,7 @@ export class SessionTreeStateManager {
           sessionId: session.sessionId,
           title: session.title,
           live: live ? (live.status === "busy" ? "busy" : "idle") : undefined,
+          active: live !== undefined && session.sessionId === this.activeSessionId,
           description: formatAgeToken(lastUsed),
           tooltip: [
             `Session: ${session.sessionId}`,

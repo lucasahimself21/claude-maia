@@ -2,7 +2,7 @@
   "name": "vscode-claude-sessions-flat",
   "displayName": "Claude Sessions (Flat)",
   "description": "Browse and resume Claude Code sessions from the Explorer sidebar, as one flat list (no per-folder grouping). Fork of vscode-claude-sessions.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "local",
   "license": "MIT",
   "icon": "media/icon.png",
