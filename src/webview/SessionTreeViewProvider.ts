@@ -4,6 +4,7 @@ import { WebviewToExtensionMessage } from "./messages";
 import { getWebviewHtml, getNonce } from "./getWebviewHtml";
 import { renameSession } from "../rename";
 import { isPatchApplied } from "../patcher";
+import { tabMatchesSession } from "../liveSessions";
 import { ClaudeTerminalService } from "../terminal";
 import { ISessionDiscoveryService } from "../discovery/types";
 import { SessionPromptNode, SessionNode } from "../models";
@@ -86,6 +87,24 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
 
     // Send initial state
     this.postStateUpdate();
+  }
+
+  /** A aba de chat ativa é a dessa sessão? Espera até ~2s pelo editor.open trocar de aba. */
+  private async waitForActiveTab(session: SessionNode): Promise<boolean> {
+    for (let i = 0; i < 20; i++) {
+      const tab = vscode.window.tabGroups.activeTabGroup.activeTab;
+      const input = tab?.input;
+      if (
+        tab &&
+        input instanceof vscode.TabInputWebview &&
+        /claude/i.test(input.viewType) &&
+        tabMatchesSession(tab.label, session)
+      ) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return false;
   }
 
   public postStartRename(sessionId: string): void {
@@ -172,14 +191,22 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
         const tabOpen = this.stateManager.isTabOpen(session.sessionId);
         if (newTitle && tabOpen && isPatchApplied("renameTab")) {
           // aba aberta: renomeia pela extensão oficial (muda a aba na hora e grava no transcript)
-          (globalThis as { __claudeMaiaRenameTitle?: string }).__claudeMaiaRenameTitle = newTitle;
           await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
-          await vscode.commands.executeCommand("claude-vscode.renameSessionTab");
-          const g = globalThis as { __claudeMaiaRenameTitle?: string };
-          if (g.__claudeMaiaRenameTitle === undefined) {
-            this.outputChannel.appendLine(`[rename] ${session.sessionId} -> "${newTitle}" também na aba do chat.`);
+          // renameSessionTab renomeia a aba ATIVA; o editor.open troca de aba de forma assíncrona,
+          // então espera a aba dessa sessão estar em foco (senão renomeava o chat que estava aberto antes)
+          if (await this.waitForActiveTab(session)) {
+            const g = globalThis as { __claudeMaiaRenameTitle?: string };
+            g.__claudeMaiaRenameTitle = newTitle;
+            await vscode.commands.executeCommand("claude-vscode.renameSessionTab");
+            if (g.__claudeMaiaRenameTitle === undefined) {
+              this.outputChannel.appendLine(`[rename] ${session.sessionId} -> "${newTitle}" também na aba do chat.`);
+            } else {
+              g.__claudeMaiaRenameTitle = undefined; // patch não rodou; segue só pelo transcript
+            }
           } else {
-            g.__claudeMaiaRenameTitle = undefined; // patch não rodou; segue só pelo transcript
+            this.outputChannel.appendLine(
+              `[rename] ${session.sessionId}: a aba do chat não ficou em foco; renomeado só no transcript.`
+            );
           }
         }
         // grava no transcript de qualquer jeito: é daí que a lista lê o título
