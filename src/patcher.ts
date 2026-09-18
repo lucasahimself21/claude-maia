@@ -92,7 +92,8 @@ function enabledPatches(): readonly Patch[] {
   return PATCHES.filter((p) => cfg.get<boolean>(`patch.${p.id}`, true));
 }
 
-/** Aplica os patches que faltam. Não mexe em quem já está aplicado. */
+/** Aplica os patches, sempre a partir do ORIGINAL (.orig): uma versão anterior da Claude Maia
+ * com patch diferente não deixa o arquivo num estado que o patch novo não reconhece. */
 export function applyPatches(log: (msg: string) => void): PatchResult {
   const dir = findClaudeCodeDir();
   const result = { extensionDir: dir, applied: [] as string[], skipped: [] as string[], failed: [] as string[] };
@@ -103,23 +104,27 @@ export function applyPatches(log: (msg: string) => void): PatchResult {
   for (const p of enabledPatches()) {
     byFile.set(p.file, [...(byFile.get(p.file) ?? []), p]);
   }
-  for (const [file, patches] of byFile) {
+  for (const file of ["webview/index.js", "extension.js"] as const) {
+    const patches = byFile.get(file) ?? [];
     const full = path.join(dir, file);
-    let content: string;
+    const orig = `${full}.orig`;
+    let current: string;
     try {
-      content = fs.readFileSync(full, "utf8");
+      current = fs.readFileSync(full, "utf8");
     } catch (err) {
       for (const p of patches) {
         result.failed.push(`${p.title}: ${String(err)}`);
       }
       continue;
     }
-    const original = content;
+    let base = current;
+    if (fs.existsSync(orig)) {
+      base = fs.readFileSync(orig, "utf8");
+    } else if (patches.length > 0) {
+      fs.writeFileSync(orig, current, "utf8");
+    }
+    let content = base;
     for (const p of patches) {
-      if (content.includes(p.marker)) {
-        result.skipped.push(p.title);
-        continue;
-      }
       const count =
         typeof p.find === "string"
           ? content.split(p.find).length - 1
@@ -131,15 +136,15 @@ export function applyPatches(log: (msg: string) => void): PatchResult {
         continue;
       }
       content = content.replace(p.find, p.replace);
-      result.applied.push(p.title);
-    }
-    if (content !== original) {
-      const orig = `${full}.orig`;
-      if (!fs.existsSync(orig)) {
-        fs.writeFileSync(orig, original, "utf8");
+      if (current.includes(p.marker)) {
+        result.skipped.push(p.title);
+      } else {
+        result.applied.push(p.title);
       }
+    }
+    if (content !== current) {
       fs.writeFileSync(full, content, "utf8");
-      log(`[patch] ${file}: ${result.applied.join("; ")}`);
+      log(`[patch] ${file}: ${result.applied.join("; ") || "reescrito a partir do original"}`);
     }
   }
   return result;

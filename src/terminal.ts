@@ -118,7 +118,15 @@ export class ClaudeTerminalService {
       const commands = await vscode.commands.getCommands(true);
       if (commands.includes("claude-vscode.editor.open") && live?.source !== "terminal") {
         this.outputChannel.appendLine(`[ide] Opening session ${session.sessionId} in Claude Code extension.`);
-        await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
+        // args: sessionId, initialPrompt, viewColumn, newSessionGroupId, fullEditor (aba de editor, não side bar)
+        await vscode.commands.executeCommand(
+          "claude-vscode.editor.open",
+          session.sessionId,
+          undefined,
+          undefined,
+          undefined,
+          true
+        );
         return;
       }
     }
