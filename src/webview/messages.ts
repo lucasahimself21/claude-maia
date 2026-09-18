@@ -55,7 +55,6 @@ export type ExtensionToWebviewMessage =
 export type WebviewToExtensionMessage =
   | { type: "update" }
   | { type: "reloadWindow" }
-  | { type: "selectFromContext"; sessionId: string }
   | { type: "checkOnly"; sessionId: string }
   | { type: "exitSelection" }
   | { type: "openSession"; sessionId: string }

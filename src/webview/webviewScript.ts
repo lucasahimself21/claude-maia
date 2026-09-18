@@ -144,10 +144,7 @@ export function getWebviewScript(): string {
               labelHtml = '<span class="tree-label">' + escapeHtml(truncated) + '</span>';
             }
 
-            let checkboxHtml = '';
-            if (state.selectionMode) {
-              checkboxHtml = '<span class="tree-checkbox ' + (isChecked ? 'checked' : '') + '" data-action="toggleCheck" data-session-id="' + escapeHtml(session.sessionId) + '"></span>';
-            }
+            const checkboxHtml = '<span class="tree-checkbox ' + (isChecked ? 'checked' : '') + '" data-action="toggleCheck" data-session-id="' + escapeHtml(session.sessionId) + '"></span>';
 
             const hoverActions = isRenaming ? '' :
               '<span class="hover-actions">' +
@@ -541,20 +538,9 @@ export function getWebviewScript(): string {
         }
       }, true);
 
-      // Suppress default browser context menu
-      // botão direito numa sessão: entra no modo de seleção (se não estiver) e marca ela
+      // Suppress default browser context menu (sem ação de seleção no botão direito)
       container.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        const row = e.target && e.target.closest ? e.target.closest('.tree-row[data-session-id]') : null;
-        if (row && row.dataset.sessionId) {
-          // vira a âncora do shift+clique (senão o intervalo partia de outro lugar)
-          const idx = getClickableRows().indexOf(row);
-          if (idx !== -1) {
-            focusedIndex = idx;
-            lastCheckedIndex = idx;
-          }
-          vscode.postMessage({ type: 'selectFromContext', sessionId: row.dataset.sessionId });
-        }
       });
 
       // Initial focus

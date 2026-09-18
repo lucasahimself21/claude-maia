@@ -175,19 +175,6 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
         break;
       }
 
-      case "selectFromContext":
-        if (!this.stateManager.selectionMode) {
-          this.stateManager.setSelectionMode(true);
-          void vscode.commands.executeCommand("setContext", "claudeSessions.selectionMode", true);
-        }
-        this.stateManager.toggleCheck(msg.sessionId);
-        void vscode.commands.executeCommand(
-          "setContext",
-          "claudeSessions.hasCheckedSessions",
-          this.stateManager.hasCheckedSessions()
-        );
-        break;
-
       case "checkOnly":
         this.stateManager.selectSessions([msg.sessionId]);
         void vscode.commands.executeCommand("setContext", "claudeSessions.hasCheckedSessions", true);
