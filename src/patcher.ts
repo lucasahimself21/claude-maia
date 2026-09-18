@@ -7,6 +7,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
+import { ensureClaudeMdBrowserRules } from "./claudeMd";
 
 export interface Patch {
   readonly id:
@@ -258,8 +259,12 @@ export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: stri
     );
   syncEnabled();
   const run = async (interactive: boolean) => {
-    if (!vscode.workspace.getConfiguration("claudeMaia").get<boolean>("patchClaudeCode", true) && !interactive) {
+    const cfg = vscode.workspace.getConfiguration("claudeMaia");
+    if (!cfg.get<boolean>("patchClaudeCode", true) && !interactive) {
       return;
+    }
+    if (cfg.get<boolean>("claudeMdRules", true)) {
+      ensureClaudeMdBrowserRules(log);
     }
     let r = applyPatches(log);
     if (!r.extensionDir) {
