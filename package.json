@@ -1,14 +1,14 @@
 {
-  "name": "vscode-claude-sessions-flat",
-  "displayName": "Claude Sessions (Flat)",
-  "description": "Browse and resume Claude Code sessions from the Explorer sidebar, as one flat list (no per-folder grouping). Fork of vscode-claude-sessions.",
-  "version": "0.4.0",
-  "publisher": "local",
+  "name": "claude-maia",
+  "displayName": "Claude Maia",
+  "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
+  "version": "1.0.0",
+  "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ShahadIshraq/claude-session-vs-code-extension.git"
+    "url": "https://github.com/lucasahimself21/claude-maia.git"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -87,13 +87,25 @@
         "command": "claudeSessions.viewSession",
         "title": "View Session",
         "icon": "$(eye)"
+      },
+      {
+        "command": "claudeMaia.patchClaudeCode",
+        "title": "Claude Maia: reaplicar patches na extensão Claude Code"
+      },
+      {
+        "command": "claudeMaia.unpatchClaudeCode",
+        "title": "Claude Maia: restaurar a extensão Claude Code original"
+      },
+      {
+        "command": "claudeMaia.refreshUsage",
+        "title": "Claude Maia: atualizar uso do plano (5h/7d)"
       }
     ],
     "views": {
       "explorer": [
         {
           "id": "claudeSessionsExplorer",
-          "name": "Claude Sessions",
+          "name": "Claude Maia",
           "type": "webview"
         }
       ],
@@ -109,7 +121,7 @@
       "activitybar": [
         {
           "id": "claudeSessionsContainer",
-          "title": "Claude Sessions",
+          "title": "Claude Maia",
           "icon": "media/claude-sessions.svg"
         }
       ]
@@ -169,12 +181,42 @@
       ]
     },
     "configuration": {
-      "title": "Claude Sessions",
+      "title": "Claude Maia",
       "properties": {
         "claudeSessions.confirmDangerousSkipPermissions": {
           "type": "boolean",
           "default": true,
           "description": "Show a required warning confirmation before launching Claude with --dangerously-skip-permissions."
+        },
+        "claudeMaia.patchClaudeCode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reaplicar os patches na extensão Claude Code ao ativar, de hora em hora e quando ela atualizar."
+        },
+        "claudeMaia.patch.autoBrowser": {
+          "type": "boolean",
+          "default": true,
+          "description": "Patch: navegador (Claude in Chrome) liga sozinho na primeira mensagem de cada chat."
+        },
+        "claudeMaia.patch.contextInChat": {
+          "type": "boolean",
+          "default": true,
+          "description": "Patch: \"Ctx 36% (363k/1000k)\" sempre visível no rodapé do chat, cores da status line."
+        },
+        "claudeMaia.patch.hideSessionManager": {
+          "type": "boolean",
+          "default": true,
+          "description": "Patch: esconde a barra lateral Session Manager da extensão Claude Code (a lista fica na Claude Maia)."
+        },
+        "claudeMaia.usageBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mostrar uso do plano (5h/7d) na barra inferior."
+        },
+        "claudeMaia.usageIntervalSeconds": {
+          "type": "number",
+          "default": 60,
+          "description": "Intervalo de atualização do uso, em segundos."
         }
       }
     }

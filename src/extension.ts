@@ -3,6 +3,8 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { ClaudeSessionDiscoveryService } from "./discovery";
 import { markShellClosed, readLiveSessions, shellPidOf, SESSIONS_DIR } from "./liveSessions";
+import { setupAutoPatch } from "./patcher";
+import { setupUsageBar } from "./usageBar";
 import { ClaudeTerminalService } from "./terminal";
 import { SessionTreeStateManager, SessionTreeViewProvider } from "./webview";
 import { SessionNode, SessionPromptNode } from "./models";
@@ -15,15 +17,13 @@ export { escapeHtml } from "./viewHtml";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const currentVersion = (
-    vscode.extensions.getExtension("ShahadIshraq.vscode-claude-sessions")?.packageJSON as
-      | { version?: string }
-      | undefined
+    vscode.extensions.getExtension("maia.claude-maia")?.packageJSON as { version?: string } | undefined
   )?.version as string | undefined;
   const previousVersion = context.globalState.get<string>("extensionVersion");
   if (previousVersion && currentVersion && previousVersion !== currentVersion) {
     void vscode.window
       .showInformationMessage(
-        `Claude Sessions updated to v${currentVersion}. Please reload the window for changes to take effect.`,
+        `Claude Maia atualizada pra v${currentVersion}. Please reload the window for changes to take effect.`,
         "Reload Window"
       )
       .then((choice) => {
@@ -36,11 +36,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     void context.globalState.update("extensionVersion", currentVersion);
   }
 
-  const outputChannel = vscode.window.createOutputChannel("Claude Sessions");
+  const outputChannel = vscode.window.createOutputChannel("Claude Maia");
+  setupAutoPatch(context, (msg) => outputChannel.appendLine(msg));
+  setupUsageBar(context);
   const discovery = new ClaudeSessionDiscoveryService(outputChannel);
   const terminalService = new ClaudeTerminalService(outputChannel);
   const stateManager = new SessionTreeStateManager(discovery);
-  outputChannel.appendLine("[lifecycle] Claude Sessions extension activated.");
+  outputChannel.appendLine("[lifecycle] Claude Maia activated.");
   outputChannel.appendLine(`[lifecycle] workspaceFolders=${String(vscode.workspace.workspaceFolders?.length ?? 0)}`);
 
   context.subscriptions.push(outputChannel);
