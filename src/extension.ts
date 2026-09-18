@@ -45,6 +45,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   setupChatFont(context, (msg) => outputChannel.appendLine(msg));
   setupUsageBar(context);
   context.subscriptions.push(vscode.commands.registerCommand("claudeMaia.newChat", () => openChatInNewGroupAtRight()));
+
+  // Cmd+W com o foco dentro do webview do chat dispara duas vezes no VS Code (o keydown repassado pelo
+  // webview e o atalho nativo do menu, ~200 ms depois); a segunda pegava a aba do grupo vizinho.
+  // Enquanto houver chat aberto, o Cmd+W passa por aqui e o segundo disparo em < 400 ms é ignorado.
+  let lastCloseAt = 0;
+  context.subscriptions.push(
+    vscode.commands.registerCommand("claudeMaia.closeActiveEditor", async () => {
+      const now = Date.now();
+      if (now - lastCloseAt < 400) {
+        outputChannel.appendLine(
+          `[abas] Cmd+W repetido ${String(now - lastCloseAt)} ms depois do anterior: ignorado (fecha só 1 aba)`
+        );
+        return;
+      }
+      lastCloseAt = now;
+      await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+    })
+  );
+  const updateChatOpenContext = () => {
+    const open = vscode.window.tabGroups.all.some((g) =>
+      g.tabs.some((t) => t.input instanceof vscode.TabInputWebview && /claude/i.test(t.input.viewType))
+    );
+    void vscode.commands.executeCommand("setContext", "claudeMaia.chatOpen", open);
+  };
+  updateChatOpenContext();
   const discovery = new ClaudeSessionDiscoveryService(outputChannel);
   const terminalService = new ClaudeTerminalService(outputChannel);
   const stateManager = new SessionTreeStateManager(discovery, context.globalState);
@@ -420,6 +445,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           .map((g) => `[${String(g.viewColumn)}: ${g.tabs.map((t) => t.label).join(" | ") || "vazio"}]`)
           .join(" ");
         outputChannel.appendLine(`[abas] ${parts.join("; ")} -> ${layout}`);
+        updateChatOpenContext();
         invalidateIdeCache();
         stateManager.notifyLive();
         updateActive();
