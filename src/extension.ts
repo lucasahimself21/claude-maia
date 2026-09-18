@@ -392,7 +392,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const input = tab?.input;
         if (tab && input instanceof vscode.TabInputWebview && /claude/i.test(input.viewType)) {
           const session = stateManager.getSessionByTitle(tab.label);
-          if (session && readLiveSessions().get(session.sessionId)?.source === "ide") {
+          if (session) {
             activeId = session.sessionId;
           }
         }

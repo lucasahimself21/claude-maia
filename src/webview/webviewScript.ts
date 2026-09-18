@@ -307,7 +307,7 @@ export function getWebviewScript(): string {
                 .map(function(r) { return r.dataset.sessionId; });
               vscode.postMessage({ type: 'rangeCheck', sessionIds: sessionIds });
             } else {
-              vscode.postMessage({ type: 'toggleCheck', sessionId: row.dataset.sessionId });
+              vscode.postMessage({ type: 'checkOnly', sessionId: row.dataset.sessionId });
               lastCheckedIndex = focusedIndex;
             }
           } else {
@@ -469,6 +469,8 @@ export function getWebviewScript(): string {
             renamingSessionId = null;
             vscode.postMessage({ type: 'renameCancelled' });
             render();
+          } else if (state && state.selectionMode) {
+            vscode.postMessage({ type: 'exitSelection' });
           }
         }
       });
