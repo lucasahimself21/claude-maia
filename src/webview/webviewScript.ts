@@ -307,8 +307,8 @@ export function getWebviewScript(): string {
                 .map(function(r) { return r.dataset.sessionId; });
               vscode.postMessage({ type: 'rangeCheck', sessionIds: sessionIds });
             } else {
-              vscode.postMessage({ type: 'checkOnly', sessionId: row.dataset.sessionId });
-              lastCheckedIndex = focusedIndex;
+              // clique esquerdo simples no modo de seleção = sair do modo (igual Esc)
+              vscode.postMessage({ type: 'exitSelection' });
             }
           } else {
             // Click on twistie toggles expand, else open session
