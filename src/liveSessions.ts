@@ -12,6 +12,35 @@ export interface LiveSessionInfo {
   readonly pid: number;
   readonly status?: string;
   readonly updatedAt: number;
+  /** "terminal" = ~/.claude/sessions (CLI no terminal); "ide" = processo da extensão Claude Code */
+  readonly source: "terminal" | "ide";
+}
+
+// Sessões abertas na extensão Claude Code do VS Code: ela não grava em ~/.claude/sessions,
+// mas sobe um processo `claude ... --resume=<id>` ou `--session-id=<id>`. Cache curto porque `ps` custa.
+let ideCache: { at: number; map: Map<string, number> } | undefined;
+export function readIdeSessions(): Map<string, number> {
+  if (ideCache && Date.now() - ideCache.at < 2000) {
+    return ideCache.map;
+  }
+  const map = new Map<string, number>();
+  try {
+    const out = execFileSync("ps", ["-axo", "pid=,command="], { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 });
+    for (const line of out.split("\n")) {
+      const m = /^\s*(\d+)\s+(.*)$/.exec(line);
+      if (!m || !/(^|\/)claude(\s|$)/.test(m[2]) || !/--(resume|session-id)=/.test(m[2])) {
+        continue;
+      }
+      const id = /--(?:resume|session-id)=([0-9a-f-]{36})/.exec(m[2])?.[1];
+      if (id) {
+        map.set(id, Number(m[1]));
+      }
+    }
+  } catch {
+    // sem ps: só terminal
+  }
+  ideCache = { at: Date.now(), map };
+  return map;
 }
 
 // pid do claude -> pid do shell (terminal do VS Code) que o iniciou
@@ -66,7 +95,7 @@ export function readLiveSessions(): Map<string, LiveSessionInfo> {
   try {
     files = fs.readdirSync(SESSIONS_DIR).filter((f) => f.endsWith(".json"));
   } catch {
-    return live;
+    files = [];
   }
 
   for (const file of files) {
@@ -81,10 +110,20 @@ export function readLiveSessions(): Map<string, LiveSessionInfo> {
       }
       const prev = live.get(data.sessionId);
       if (!prev || (data.updatedAt ?? 0) > (prev.updatedAt ?? 0)) {
-        live.set(data.sessionId, { pid: data.pid, status: data.status, updatedAt: data.updatedAt ?? 0 });
+        live.set(data.sessionId, {
+          pid: data.pid,
+          status: data.status,
+          updatedAt: data.updatedAt ?? 0,
+          source: "terminal"
+        });
       }
     } catch {
       // arquivo parcial/corrompido: ignora
+    }
+  }
+  for (const [sessionId, pid] of readIdeSessions()) {
+    if (!live.has(sessionId)) {
+      live.set(sessionId, { pid, updatedAt: 0, source: "ide" });
     }
   }
   return live;

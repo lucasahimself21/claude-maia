@@ -338,6 +338,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         shellPidOf(info.pid, known);
       }
     };
+    let lastLiveKey = "";
+    const pollIde = () => {
+      const key = [...readLiveSessions().entries()]
+        .map(([id, i]) => `${id}:${i.source}`)
+        .sort()
+        .join(",");
+      if (key !== lastLiveKey) {
+        lastLiveKey = key;
+        stateManager.notifyLive();
+      }
+    };
+    const ideTick = setInterval(pollIde, 3000);
+    context.subscriptions.push({ dispose: () => clearInterval(ideTick) });
     setTimeout(mapLive, 3000);
     const mapTick = setInterval(mapLive, 10000);
     context.subscriptions.push({ dispose: () => clearInterval(mapTick) });
@@ -363,9 +376,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           }
         }
       }
+      // aba do chat da extensão Claude Code em foco: casa pelo título da aba
+      if (!activeId) {
+        const tab = vscode.window.tabGroups.activeTabGroup.activeTab;
+        const input = tab?.input;
+        if (tab && input instanceof vscode.TabInputWebview && /claude/i.test(input.viewType)) {
+          const session = stateManager.getSessionByTitle(tab.label);
+          if (session && readLiveSessions().get(session.sessionId)?.source === "ide") {
+            activeId = session.sessionId;
+          }
+        }
+      }
       stateManager.setActiveSession(activeId);
     };
     context.subscriptions.push(vscode.window.onDidChangeActiveTerminal(updateActive));
+    context.subscriptions.push(vscode.window.tabGroups.onDidChangeTabs(() => updateActive()));
     const activeTick = setInterval(updateActive, 2000);
     context.subscriptions.push({ dispose: () => clearInterval(activeTick) });
 

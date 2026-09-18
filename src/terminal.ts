@@ -8,6 +8,7 @@ const execFileAsync = promisify(execFile);
 const execAsync = promisify(exec);
 
 export interface OpenSessionOptions {
+  readonly forceTerminal?: boolean;
   readonly dangerouslySkipPermissions?: boolean;
 }
 
@@ -111,6 +112,16 @@ export class ClaudeTerminalService {
   public constructor(private readonly outputChannel: vscode.OutputChannel) {}
 
   public async openSession(session: SessionNode, options: OpenSessionOptions = {}): Promise<void> {
+    // Extensão oficial instalada: abre (ou foca) a sessão no chat dela, salvo pedido explícito de terminal
+    if (!options.forceTerminal && options.dangerouslySkipPermissions !== true) {
+      const live = readLiveSessions().get(session.sessionId);
+      const commands = await vscode.commands.getCommands(true);
+      if (commands.includes("claude-vscode.editor.open") && live?.source !== "terminal") {
+        this.outputChannel.appendLine(`[ide] Opening session ${session.sessionId} in Claude Code extension.`);
+        await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
+        return;
+      }
+    }
     const hasClaude = await this.hasClaudeBinary();
     if (!hasClaude) {
       vscode.window.showErrorMessage("Could not find `claude` in PATH. Install Claude Code CLI to resume sessions.");

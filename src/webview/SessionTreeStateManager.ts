@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import { readLiveSessions } from "../liveSessions";
+
+const IDE_BUSY_WINDOW_MS = 6000;
 import { SessionNode } from "../models";
 import { ISessionDiscoveryService, SessionPrompt } from "../discovery/types";
 import { formatAgeToken, truncateForTreeLabel, findHighlightRanges } from "../utils/formatting";
@@ -42,6 +44,18 @@ export class SessionTreeStateManager {
   }
 
   /** Re-renderiza com o estado atual (bolinha/tempo) sem reler os transcripts. */
+  private idleTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Re-renderiza depois da janela de "busy" da IDE, pra bolinha parar de pulsar sozinha. */
+  private scheduleIdleCheck(): void {
+    if (this.idleTimer) {
+      return;
+    }
+    this.idleTimer = setTimeout(() => {
+      this.idleTimer = undefined;
+      this.notifyLive();
+    }, IDE_BUSY_WINDOW_MS + 500);
+  }
+
   public notifyLive(): void {
     this._onDidChangeState.fire();
   }
@@ -129,6 +143,17 @@ export class SessionTreeStateManager {
       this.loadPromptsForSession(sessionId);
     }
     this.scheduleStateChange();
+  }
+
+  /** Sessão pelo título da aba (a extensão Claude Code nomeia a aba com o título da sessão). */
+  public getSessionByTitle(title: string): SessionNode | undefined {
+    for (const sessions of this.sessionsByWorkspace.values()) {
+      const found = sessions.find((s) => s.title === title);
+      if (found) {
+        return found;
+      }
+    }
+    return undefined;
   }
 
   public getSessionById(sessionId: string): SessionNode | undefined {
@@ -238,17 +263,24 @@ export class SessionTreeStateManager {
 
         const live = liveSessions.get(session.sessionId);
         const lastUsed = Math.max(session.updatedAt, live?.updatedAt ?? 0);
+        // IDE não publica busy/idle: transcript mudando nos últimos segundos = respondendo
+        const ideBusy = live?.source === "ide" && Date.now() - session.updatedAt < IDE_BUSY_WINDOW_MS;
+        if (ideBusy) {
+          this.scheduleIdleCheck();
+        }
 
         sessionItems.push({
           sessionId: session.sessionId,
           title: session.title,
-          live: live ? (live.status === "busy" ? "busy" : "idle") : undefined,
+          live: live ? (live.status === "busy" || ideBusy ? "busy" : "idle") : undefined,
           active: live !== undefined && session.sessionId === this.activeSessionId,
           description: formatAgeToken(lastUsed),
           tooltip: [
             `Session: ${session.sessionId}`,
             `Title: ${session.title}`,
-            live ? `Open in terminal (pid ${String(live.pid)}, ${live.status ?? "idle"})` : "Not running",
+            live
+              ? `Open in ${live.source === "ide" ? "Claude Code" : "terminal"} (pid ${String(live.pid)}, ${live.status ?? (ideBusy ? "busy" : "idle")})`
+              : "Not running",
             `Last used: ${new Date(lastUsed).toLocaleString()}`,
             `CWD: ${session.cwd}`,
             `Transcript: ${session.transcriptPath}`
