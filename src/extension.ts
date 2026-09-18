@@ -208,7 +208,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (!session || session.kind !== "session") {
         return;
       }
-      await terminalService.openSession(session);
+      await terminalService.openSession(session, { tabOpen: stateManager.isTabOpen(session.sessionId) });
     })
   );
 

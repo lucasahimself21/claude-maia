@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { readIdeTabTitles, readLiveSessions, tabMatchesSession } from "../liveSessions";
+import { readIdeTabTitles, readLiveSessions, sessionsMatchingTab } from "../liveSessions";
 
 const IDE_BUSY_WINDOW_MS = 6000;
 const PIN_KEY = "claudeMaia.pinnedSessions";
@@ -158,14 +158,51 @@ export class SessionTreeStateManager {
    * se mais de uma casar (dois chats "Google"), a de escrita mais recente. */
   public getSessionByTabLabel(label: string): SessionNode | undefined {
     let best: SessionNode | undefined;
-    for (const sessions of this.sessionsByWorkspace.values()) {
-      for (const s of sessions) {
-        if (tabMatchesSession(label, s) && (!best || s.updatedAt > best.updatedAt)) {
-          best = s;
-        }
+    for (const s of sessionsMatchingTab(label, this.allSessions())) {
+      if (!best || s.updatedAt > best.updatedAt) {
+        best = s;
       }
     }
     return best;
+  }
+
+  /** Cada aba de chat aberta vale pra UMA sessão: a de escrita mais recente cujo título casa com o
+   * nome da aba (sem isso, dois chats "Google" acendiam a bolinha nos dois com uma aba só). */
+  private computeOpenIds(sessions: readonly SessionNode[]): Set<string> {
+    const openIds = new Set<string>();
+    const byRecent = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt);
+    for (const [label, count] of readIdeTabTitles()) {
+      let left = count;
+      for (const s of sessionsMatchingTab(label, byRecent)) {
+        if (left === 0) {
+          break;
+        }
+        if (!openIds.has(s.sessionId)) {
+          openIds.add(s.sessionId);
+          left--;
+        }
+      }
+    }
+    return openIds;
+  }
+
+  private allSessions(): SessionNode[] {
+    const all: SessionNode[] = [];
+    const seen = new Set<string>();
+    for (const sessions of this.sessionsByWorkspace.values()) {
+      for (const s of sessions) {
+        if (!seen.has(s.sessionId)) {
+          seen.add(s.sessionId);
+          all.push(s);
+        }
+      }
+    }
+    return all;
+  }
+
+  /** A aba de chat DESSA sessão está aberta (não a de outra com o mesmo nome, atual ou antigo). */
+  public isTabOpen(sessionId: string): boolean {
+    return this.computeOpenIds(this.allSessions()).has(sessionId);
   }
 
   public getSessionById(sessionId: string): SessionNode | undefined {
@@ -238,23 +275,7 @@ export class SessionTreeStateManager {
       }
 
       const liveSessions = readLiveSessions();
-      const ideTabs = readIdeTabTitles();
-      // cada aba aberta vale pra UMA sessão: a de escrita mais recente cujo título casa com o nome
-      // da aba (sem isso, dois chats "Google" acendiam a bolinha nos dois com uma aba só)
-      const openIds = new Set<string>();
-      const byRecent = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt);
-      for (const [label, count] of ideTabs) {
-        let left = count;
-        for (const s of byRecent) {
-          if (left === 0) {
-            break;
-          }
-          if (!openIds.has(s.sessionId) && tabMatchesSession(label, s)) {
-            openIds.add(s.sessionId);
-            left--;
-          }
-        }
-      }
+      const openIds = this.computeOpenIds(sessions);
       const openInIde = (s: SessionNode) => openIds.has(s.sessionId);
       const sessionItems: WebviewSessionItem[] = [];
       for (const session of sessions) {

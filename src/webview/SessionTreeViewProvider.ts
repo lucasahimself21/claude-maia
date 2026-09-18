@@ -3,7 +3,6 @@ import { SessionTreeStateManager } from "./SessionTreeStateManager";
 import { WebviewToExtensionMessage } from "./messages";
 import { getWebviewHtml, getNonce } from "./getWebviewHtml";
 import { renameSession } from "../rename";
-import { readIdeTabTitles, tabMatchesSession } from "../liveSessions";
 import { isPatchApplied } from "../patcher";
 import { ClaudeTerminalService } from "../terminal";
 import { ISessionDiscoveryService } from "../discovery/types";
@@ -147,7 +146,7 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
       case "openSession": {
         const session = this.stateManager.getSessionById(msg.sessionId);
         if (session) {
-          await this.terminalService.openSession(session);
+          await this.terminalService.openSession(session, { tabOpen: this.stateManager.isTabOpen(session.sessionId) });
         }
         break;
       }
@@ -170,7 +169,7 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         const newTitle = msg.newTitle.trim();
-        const tabOpen = [...readIdeTabTitles().keys()].some((label) => tabMatchesSession(label, session));
+        const tabOpen = this.stateManager.isTabOpen(session.sessionId);
         if (newTitle && tabOpen && isPatchApplied("renameTab")) {
           // aba aberta: renomeia pela extensão oficial (muda a aba na hora e grava no transcript)
           (globalThis as { __claudeMaiaRenameTitle?: string }).__claudeMaiaRenameTitle = newTitle;

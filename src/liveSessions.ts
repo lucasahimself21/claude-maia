@@ -105,6 +105,16 @@ export function tabMatchesSession(label: string, session: { title: string; title
   return (session.titles ?? [session.title]).some((t) => tabLabelMatches(label, t));
 }
 
+/** Entre as candidatas, as que casam pelo título ATUAL; só se nenhuma casar, as que casam por
+ * título antigo (um chat que já se chamou "X" não pode roubar a aba do chat que se chama "X" hoje). */
+export function sessionsMatchingTab<T extends { title: string; titles?: readonly string[] }>(
+  label: string,
+  sessions: readonly T[]
+): T[] {
+  const current = sessions.filter((s) => tabLabelMatches(label, s.title));
+  return current.length > 0 ? current : sessions.filter((s) => tabMatchesSession(label, s));
+}
+
 /** Título -> quantas abas de chat da extensão Claude Code com esse título estão abertas nesta janela
  * (a aba leva o título da sessão; dois chats podem ter o mesmo título). */
 export function readIdeTabTitles(): Map<string, number> {

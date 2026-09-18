@@ -1,7 +1,7 @@
 import { execFile, exec } from "child_process";
 import { promisify } from "util";
 import * as vscode from "vscode";
-import { findTerminalForPid, readIdeTabTitles, readLiveSessions, tabMatchesSession } from "./liveSessions";
+import { findTerminalForPid, readLiveSessions } from "./liveSessions";
 import { SessionNode } from "./models";
 
 const execFileAsync = promisify(execFile);
@@ -10,6 +10,8 @@ const execAsync = promisify(exec);
 export interface OpenSessionOptions {
   readonly forceTerminal?: boolean;
   readonly dangerouslySkipPermissions?: boolean;
+  /** a aba de chat dessa sessão já está aberta (só foca em vez de abrir grupo novo) */
+  readonly tabOpen?: boolean;
 }
 
 /** Time to wait for shell integration before falling back to sendText. */
@@ -133,9 +135,8 @@ export class ClaudeTerminalService {
         this.outputChannel.appendLine(`[ide] Opening session ${session.sessionId} in Claude Code extension.`);
         // mesmos args do atalho Cmd+Shift+0 (só o id): segue o "preferredLocation" da extensão,
         // senão abre no layout antigo (fullEditor) com outro visual
-        // aba já aberta (título casa, mesmo truncado): só foca; senão abre já num grupo novo no fim
-        const tabOpen = [...readIdeTabTitles().keys()].some((label) => tabMatchesSession(label, session));
-        if (tabOpen) {
+        // aba já aberta (quem chama sabe, pela lista): só foca; senão abre já num grupo novo no fim
+        if (options.tabOpen) {
           await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
         } else {
           await openChatInNewGroupAtRight(session.sessionId);
