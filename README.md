@@ -13,7 +13,7 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
   5. entrelinha do chat (`claudeMaia.chatLineHeight`, 1.3), em CSS;
   6. renomear pela lista renomeia a aba do chat aberta (usa o rename da oficial, sem input box);
   7. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
-     Original guardado em `<arquivo>.orig`; engrenagem no título da view: "Reaplicar patches" e "Restaurar a extensão original" (nada fica na paleta de comandos). Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
+     Original guardado em `<arquivo>.orig`; engrenagem no título da view: "Desativar Claude Maia (Claude Code original)" desfaz tudo e para o reaplicar; "Ativar Claude Maia" volta (nada fica na paleta de comandos). Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
 
 **Instalar**: baixe o `.vsix` da [última release](https://github.com/lucasahimself21/claude-maia/releases/latest) e rode `code --install-extension claude-maia-<versão>.vsix` (ou, no VS Code, Extensions → `...` → Install from VSIX). Se a extensão oficial [Claude Code for VS Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) não estiver instalada, a Claude Maia instala ela do marketplace e aplica os patches; só falta logar. macOS e Windows.
 

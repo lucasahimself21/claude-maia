@@ -249,6 +249,14 @@ export function restoreOriginals(): string[] {
 /** Roda ao ativar, de hora em hora e quando aparece pasta nova da extensão. Avisa só quando muda algo. */
 export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: string) => void): void {
   let installing = false;
+  // "Ativar/Desativar Claude Maia" no menu = a configuração patchClaudeCode (que também para o reaplicar automático)
+  const syncEnabled = () =>
+    void vscode.commands.executeCommand(
+      "setContext",
+      "claudeMaia.enabled",
+      vscode.workspace.getConfiguration("claudeMaia").get<boolean>("patchClaudeCode", true)
+    );
+  syncEnabled();
   const run = async (interactive: boolean) => {
     if (!vscode.workspace.getConfiguration("claudeMaia").get<boolean>("patchClaudeCode", true) && !interactive) {
       return;
@@ -274,7 +282,7 @@ export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: stri
       } catch (err) {
         installing = false;
         void vscode.window.showWarningMessage(
-          `Claude Maia: não deu pra instalar a Claude Code (${String(err)}). Instale pelo marketplace e rode "Claude Maia: reaplicar patches".`
+          `Claude Maia: não deu pra instalar a Claude Code (${String(err)}). Instale pelo marketplace e use "Ativar Claude Maia" na engrenagem.`
         );
         return;
       }
@@ -294,7 +302,7 @@ export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: stri
     }
     if (r.applied.length > 0) {
       const choice = await vscode.window.showInformationMessage(
-        `Claude Maia: patches aplicados na Claude Code (${r.applied.length}). Recarregue a janela pra valer.`,
+        `Claude Maia ativada na Claude Code (${r.applied.length} ajustes). Recarregue a janela pra valer.`,
         "Reload Window"
       );
       if (choice) {
@@ -302,18 +310,28 @@ export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: stri
       }
     } else if (interactive) {
       void vscode.window.showInformationMessage(
-        `Claude Maia: nada a fazer, ${r.skipped.length} patch(es) já aplicados em ${path.basename(r.extensionDir)}.`
+        `Claude Maia já está ativa (${r.skipped.length} ajustes em ${path.basename(r.extensionDir)}).`
       );
     }
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("claudeMaia.patchClaudeCode", () => run(true)),
+    vscode.commands.registerCommand("claudeMaia.patchClaudeCode", async () => {
+      await vscode.workspace
+        .getConfiguration("claudeMaia")
+        .update("patchClaudeCode", true, vscode.ConfigurationTarget.Global);
+      syncEnabled();
+      await run(true);
+    }),
     vscode.commands.registerCommand("claudeMaia.unpatchClaudeCode", async () => {
+      await vscode.workspace
+        .getConfiguration("claudeMaia")
+        .update("patchClaudeCode", false, vscode.ConfigurationTarget.Global);
+      syncEnabled();
       const restored = restoreOriginals();
       const choice = await vscode.window.showInformationMessage(
         restored.length
-          ? `Claude Maia: original restaurado (${restored.join(", ")}). Recarregue a janela.`
+          ? "Claude Maia desativada: Claude Code volta ao original. Recarregue a janela."
           : "Claude Maia: nada pra restaurar.",
         ...(restored.length ? ["Reload Window"] : [])
       );
@@ -327,6 +345,7 @@ export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: stri
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("claudeMaia")) {
+        syncEnabled();
         void run(false);
       }
     })

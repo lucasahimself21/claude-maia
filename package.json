@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.4.14",
+  "version": "1.4.15",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -84,12 +84,12 @@
       },
       {
         "command": "claudeMaia.patchClaudeCode",
-        "title": "Reaplicar patches na extensão Claude Code",
+        "title": "Ativar Claude Maia",
         "category": "Claude Maia"
       },
       {
         "command": "claudeMaia.unpatchClaudeCode",
-        "title": "Restaurar a extensão Claude Code original",
+        "title": "Desativar Claude Maia (Claude Code original)",
         "category": "Claude Maia"
       },
       {
@@ -152,11 +152,13 @@
         },
         {
           "command": "claudeMaia.patchClaudeCode",
-          "group": "3_tools@1"
+          "group": "3_toggle",
+          "when": "!claudeMaia.enabled"
         },
         {
           "command": "claudeMaia.unpatchClaudeCode",
-          "group": "3_tools@2"
+          "group": "3_toggle",
+          "when": "claudeMaia.enabled"
         }
       ],
       "commandPalette": [
@@ -197,7 +199,7 @@
         "claudeMaia.patchClaudeCode": {
           "type": "boolean",
           "default": true,
-          "description": "Reaplicar os patches na extensão Claude Code ao ativar, de hora em hora e quando ela atualizar."
+          "description": "Claude Maia ativa na extensão Claude Code (aplica e reaplica os ajustes ao ativar, de hora em hora e quando ela atualiza). O item Ativar/Desativar da engrenagem muda isto."
         },
         "claudeMaia.patch.autoBrowser": {
           "type": "boolean",
