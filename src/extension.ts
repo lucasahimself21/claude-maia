@@ -6,7 +6,7 @@ import { invalidateIdeCache, markShellClosed, readLiveSessions, shellPidOf, SESS
 import { setupAutoPatch } from "./patcher";
 import { setupUpdater } from "./updater";
 import { setupUsageBar } from "./usageBar";
-import { ClaudeTerminalService, moveActiveEditorToNewGroupAtRight } from "./terminal";
+import { ClaudeTerminalService, openChatInNewGroupAtRight } from "./terminal";
 import { setupChatFont } from "./chatFont";
 import { SessionTreeStateManager, SessionTreeViewProvider } from "./webview";
 import { SessionNode, SessionPromptNode } from "./models";
@@ -42,12 +42,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   setupAutoPatch(context, (msg) => outputChannel.appendLine(msg));
   setupChatFont(context, (msg) => outputChannel.appendLine(msg));
   setupUsageBar(context);
-  context.subscriptions.push(
-    vscode.commands.registerCommand("claudeMaia.newChat", async () => {
-      await vscode.commands.executeCommand("claude-vscode.editor.open");
-      await moveActiveEditorToNewGroupAtRight();
-    })
-  );
+  context.subscriptions.push(vscode.commands.registerCommand("claudeMaia.newChat", () => openChatInNewGroupAtRight()));
   const discovery = new ClaudeSessionDiscoveryService(outputChannel);
   const terminalService = new ClaudeTerminalService(outputChannel);
   const stateManager = new SessionTreeStateManager(discovery);

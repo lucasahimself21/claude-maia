@@ -108,13 +108,17 @@ function awaitCommandStart(
   });
 }
 
-/** Leva o editor ativo pra um grupo NOVO no fim, à direita de todos. `moveEditorToRightGroup`
- * só cria grupo quando não existe um à direita; com dois chats abertos ele juntava o novo no vizinho. */
-export async function moveActiveEditorToNewGroupAtRight(): Promise<void> {
-  await vscode.commands.executeCommand("workbench.action.moveEditorToLastGroup");
-  await vscode.commands.executeCommand("workbench.action.newGroupRight");
-  await vscode.commands.executeCommand("workbench.action.focusPreviousGroup");
-  await vscode.commands.executeCommand("workbench.action.moveEditorToNextGroup");
+/** Abre um chat da extensão Claude Code (sessão existente ou novo) já num grupo NOVO no fim, à direita
+ * de todos. O `claude-vscode.editor.open` aceita o grupo como 3º argumento, então o chat nasce no lugar
+ * certo em vez de aparecer no grupo atual e ser arrastado depois. Grupo ativo vazio: usa ele mesmo. */
+export async function openChatInNewGroupAtRight(sessionId?: string): Promise<void> {
+  let group = vscode.window.tabGroups.activeTabGroup;
+  if (group.tabs.length > 0) {
+    await vscode.commands.executeCommand("workbench.action.focusLastEditorGroup");
+    await vscode.commands.executeCommand("workbench.action.newGroupRight");
+    group = vscode.window.tabGroups.activeTabGroup;
+  }
+  await vscode.commands.executeCommand("claude-vscode.editor.open", sessionId, undefined, group.viewColumn);
 }
 
 export class ClaudeTerminalService {
@@ -129,11 +133,12 @@ export class ClaudeTerminalService {
         this.outputChannel.appendLine(`[ide] Opening session ${session.sessionId} in Claude Code extension.`);
         // mesmos args do atalho Cmd+Shift+0 (só o id): segue o "preferredLocation" da extensão,
         // senão abre no layout antigo (fullEditor) com outro visual
-        // aba já aberta (título casa, mesmo truncado): o open só foca; senão abre e vai pra um grupo novo
+        // aba já aberta (título casa, mesmo truncado): só foca; senão abre já num grupo novo no fim
         const tabOpen = [...readIdeTabTitles().keys()].some((label) => tabLabelMatches(label, session.title));
-        await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
-        if (!tabOpen) {
-          await moveActiveEditorToNewGroupAtRight();
+        if (tabOpen) {
+          await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
+        } else {
+          await openChatInNewGroupAtRight(session.sessionId);
         }
         return;
       }
