@@ -108,6 +108,12 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
   const week = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1001);
   five.command = "claudeMaia.refreshUsage";
   week.command = "claudeMaia.refreshUsage";
+  // aparece já, mesmo antes da primeira resposta (um 429 logo de cara deixava a barra vazia)
+  five.text = "5h …";
+  week.text = "7d …";
+  five.tooltip = "Claude: consultando uso do plano";
+  five.show();
+  week.show();
   context.subscriptions.push(five, week);
 
   const enabled = () => vscode.workspace.getConfiguration("claudeMaia").get<boolean>("usageBar", true);
@@ -140,6 +146,7 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
       const msg = err instanceof Error ? err.message : "erro";
       if (msg === "HTTP 429") {
         blockedUntil = Date.now() + 5 * 60000;
+        five.tooltip = "Claude: o endpoint de uso limitou as consultas; tenta de novo em 5 min";
         return; // mantém o último valor na barra
       }
       five.text = `5h ${msg}`;
