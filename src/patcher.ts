@@ -69,28 +69,35 @@ export const PATCHES: readonly Patch[] = [
     id: "chatFont",
     title: "fonte, tamanho e entrelinha do chat = os do editor (ou claudeMaia.chatFont*)",
     file: "webview/index.js",
-    // prepend: roda antes do app e sobrescreve as variáveis que o VS Code injeta na webview
+    // prepend: roda antes do app. O bundle embute a pilha do sistema (-apple-system, BlinkMacSystemFont...)
+    // em vez da variável do VS Code, então só uma folha de estilo com !important muda o texto do chat;
+    // os ícones (codicon) ficam de fora pra não virar quadradinho.
     find: /^/,
     replace: () => {
       const f = chatFont();
       if (!f.family && !f.size && !f.lineHeight) {
         return "";
       }
-      const set: string[] = [];
+      const css: string[] = [];
+      const vars: string[] = [];
       if (f.family) {
         const j = JSON.stringify(f.family);
-        set.push(`s.setProperty("--vscode-font-family",${j});s.setProperty("--vscode-editor-font-family",${j})`);
+        css.push(`body,body *:not(.codicon):not(.codicon *){font-family:${j},monospace!important}`);
+        vars.push(`s.setProperty("--vscode-font-family",${j});s.setProperty("--vscode-editor-font-family",${j})`);
       }
       if (f.size) {
-        const j = JSON.stringify(`${String(f.size)}px`);
-        set.push(
-          `s.setProperty("--vscode-font-size",${j});s.setProperty("--vscode-editor-font-size",${j});s.fontSize=${j}`
-        );
+        css.push(`body{font-size:${String(f.size)}px!important}`);
+        vars.push(`s.setProperty("--vscode-font-size",${JSON.stringify(`${String(f.size)}px`)})`);
       }
       if (f.lineHeight) {
-        set.push(`s.lineHeight=${JSON.stringify(String(f.lineHeight))}`);
+        css.push(`body{line-height:${String(f.lineHeight)}!important}`);
       }
-      return `/*claude-maia-font*/try{var s=document.documentElement.style;${set.join(";")}}catch(_){}\n`;
+      const cssJson = JSON.stringify(css.join(""));
+      return (
+        `/*claude-maia-font*/try{var s=document.documentElement.style;${vars.join(";")};` +
+        `var st=document.createElement("style");st.id="claude-maia-font";st.textContent=${cssJson};` +
+        `(document.head||document.documentElement).appendChild(st)}catch(_){}\n`
+      );
     },
     marker: "/*claude-maia-font*/"
   },
