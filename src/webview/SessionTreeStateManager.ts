@@ -21,6 +21,8 @@ export class SessionTreeStateManager {
   private promptsCache = new Map<string, SessionPrompt[]>();
   private hasLoaded = false;
   private activeSessionId: string | undefined;
+  /** sessionId -> quando ficou aberta (ordem de abertura, pra lista não reordenar enquanto aberta) */
+  private liveSince = new Map<string, number>();
   private fireTimeout: ReturnType<typeof setTimeout> | undefined;
 
   public constructor(private readonly discoveryService: ISessionDiscoveryService) {}
@@ -278,12 +280,20 @@ export class SessionTreeStateManager {
           this.scheduleIdleCheck();
         }
 
+        if (live) {
+          if (!this.liveSince.has(session.sessionId)) {
+            this.liveSince.set(session.sessionId, Date.now());
+          }
+        } else {
+          this.liveSince.delete(session.sessionId);
+        }
         sessionItems.push({
           sessionId: session.sessionId,
           title: session.title,
           live: live ? (live.status === "busy" || ideBusy ? "busy" : "idle") : undefined,
           active: live !== undefined && session.sessionId === this.activeSessionId,
-          description: formatAgeToken(lastUsed),
+          // aberta = "now" fixo; o tempo só começa a contar depois que fecha
+          description: live ? "now" : formatAgeToken(lastUsed),
           tooltip: [
             `Session: ${session.sessionId}`,
             `Title: ${session.title}`,
@@ -302,13 +312,16 @@ export class SessionTreeStateManager {
         });
       }
 
-      // sessão com terminal aberto (busy ou idle) sempre no topo; fechada
-      // não sobe mais que ela mesmo tendo interação mais recente
+      // abertas no topo, na ordem em que abriram (não trocam de lugar enquanto abertas);
+      // fechadas abaixo, da mais recente pra mais antiga
       sessionItems.sort((a, b) => {
         const aLive = a.live !== undefined ? 1 : 0;
         const bLive = b.live !== undefined ? 1 : 0;
         if (aLive !== bLive) {
           return bLive - aLive;
+        }
+        if (aLive) {
+          return (this.liveSince.get(a.sessionId) ?? 0) - (this.liveSince.get(b.sessionId) ?? 0);
         }
         return b.lastUsed - a.lastUsed;
       });

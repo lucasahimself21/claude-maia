@@ -140,9 +140,14 @@ export function readLiveSessions(): Map<string, LiveSessionInfo> {
       // arquivo parcial/corrompido: ignora
     }
   }
+  // o claude que a extensão Claude Code sobe também grava em ~/.claude/sessions (status/updatedAt);
+  // pelo comando (--resume=<id>) sabemos que é da IDE, senão o clique ia procurar um terminal
   for (const [sessionId, pid] of readIdeSessions()) {
-    if (!live.has(sessionId)) {
+    const prev = live.get(sessionId);
+    if (!prev) {
       live.set(sessionId, { pid, updatedAt: 0, source: "ide" });
+    } else if (prev.pid === pid) {
+      live.set(sessionId, { ...prev, source: "ide" });
     }
   }
   return live;

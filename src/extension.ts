@@ -354,6 +354,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // trava do rename das abas (declarada aqui porque o updateActive precisa dela)
     let syncing = false;
+    let lastLoggedActive: string | undefined;
 
     // sessão cujo terminal está em foco fica selecionada na lista
     // (não escuta onDidChangeState: o rename das abas troca o terminal ativo e viraria loop)
@@ -382,6 +383,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           if (session) {
             activeId = session.sessionId;
           }
+        }
+        if (activeId !== lastLoggedActive) {
+          lastLoggedActive = activeId;
+          const kind = !tab
+            ? "sem aba"
+            : input instanceof vscode.TabInputWebview
+              ? `webview ${input.viewType}`
+              : "outro tipo";
+          outputChannel.appendLine(
+            `[foco] aba "${tab?.label ?? ""}" (${kind}) -> ${activeId ? activeId.slice(0, 8) : "nenhuma sessão"}`
+          );
         }
       }
       stateManager.setActiveSession(activeId);
