@@ -45,12 +45,18 @@ export async function confirmAndDeleteSessions(
   const uniqueTranscriptPaths = new Set<string>();
 
   for (const session of sessions) {
+    // abas de chat dessa sessão, resolvidas ANTES de apagar (depois ela some da lista e a aba não casa mais)
+    const openTabs = chatTabsOf(session, stateManager);
     const result = await deleteSession(session.transcriptPath, session.sessionId);
     if (result.success) {
       outputChannel.appendLine(
         `[delete] Session ${session.sessionId} deleted. Removed paths: ${result.deletedPaths.join(", ")}`
       );
       successCount++;
+      if (openTabs.length > 0) {
+        await vscode.window.tabGroups.close(openTabs);
+        outputChannel.appendLine(`[delete] ${String(openTabs.length)} aba(s) de chat da sessão fechada(s).`);
+      }
     } else {
       outputChannel.appendLine(`[delete] Error deleting session ${session.sessionId}: ${result.error}`);
       failureCount++;
@@ -103,4 +109,23 @@ export async function confirmDangerousLaunch(sessionTitle: string): Promise<bool
   );
 
   return response === acceptLabel;
+}
+
+/** Abas de chat da extensão Claude Code que pertencem a essa sessão (mesma regra da bolinha:
+ * com dois chats de mesmo título, a aba é da sessão de escrita mais recente). */
+function chatTabsOf(session: SessionNode, stateManager: SessionTreeStateManager): vscode.Tab[] {
+  const tabs: vscode.Tab[] = [];
+  for (const group of vscode.window.tabGroups.all) {
+    for (const tab of group.tabs) {
+      const input = tab.input;
+      if (
+        input instanceof vscode.TabInputWebview &&
+        /claude/i.test(input.viewType) &&
+        stateManager.getSessionByTabLabel(tab.label)?.sessionId === session.sessionId
+      ) {
+        tabs.push(tab);
+      }
+    }
+  }
+  return tabs;
 }
