@@ -28,6 +28,13 @@ export class SessionTreeViewProvider implements vscode.WebviewViewProvider {
     _token: vscode.CancellationToken
   ): void {
     this.webviewView = webviewView;
+    // toda vez que a view aparece (abrir Explorer, trocar de janela), confere atualização
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) {
+        void vscode.commands.executeCommand("claudeMaia.checkUpdateQuiet");
+      }
+    });
+    void vscode.commands.executeCommand("claudeMaia.checkUpdateQuiet");
 
     webviewView.webview.options = {
       enableScripts: true,

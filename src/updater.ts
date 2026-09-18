@@ -49,8 +49,14 @@ async function fetchLatest(): Promise<Release | undefined> {
 export function setupUpdater(context: vscode.ExtensionContext, log: (msg: string) => void): void {
   const current = (context.extension.packageJSON as { version: string }).version;
   let notified = false;
+  let lastCheck = 0;
 
   const check = async (interactive: boolean) => {
+    // GitHub limita 60 consultas/h sem login: no máximo 1 a cada 2 min fora do pedido manual
+    if (!interactive && Date.now() - lastCheck < 120000) {
+      return;
+    }
+    lastCheck = Date.now();
     try {
       latest = await fetchLatest();
     } catch (err) {
@@ -115,13 +121,14 @@ export function setupUpdater(context: vscode.ExtensionContext, log: (msg: string
 
   context.subscriptions.push(
     vscode.commands.registerCommand("claudeMaia.checkUpdate", () => check(true)),
+    vscode.commands.registerCommand("claudeMaia.checkUpdateQuiet", () => check(false)),
     vscode.commands.registerCommand("claudeMaia.update", () =>
       update().catch(
         (err: unknown) => void vscode.window.showErrorMessage(`Claude Maia: não deu pra atualizar (${String(err)})`)
       )
     )
   );
-  setTimeout(() => void check(false), 10000);
+  setTimeout(() => void check(false), 5000);
   const tick = setInterval(() => void check(false), 6 * 3600 * 1000);
   context.subscriptions.push({ dispose: () => clearInterval(tick) });
 }
