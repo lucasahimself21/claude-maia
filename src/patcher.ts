@@ -193,18 +193,44 @@ export function restoreOriginals(): string[] {
 
 /** Roda ao ativar, de hora em hora e quando aparece pasta nova da extensão. Avisa só quando muda algo. */
 export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: string) => void): void {
+  let installing = false;
   const run = async (interactive: boolean) => {
     if (!vscode.workspace.getConfiguration("claudeMaia").get<boolean>("patchClaudeCode", true) && !interactive) {
       return;
     }
-    const r = applyPatches(log);
+    let r = applyPatches(log);
     if (!r.extensionDir) {
-      if (interactive) {
-        void vscode.window.showWarningMessage(
-          "Claude Maia: extensão Claude Code (anthropic.claude-code) não encontrada."
-        );
+      // extensão oficial não instalada: instala do marketplace e aplica os patches em seguida
+      if (installing) {
+        return;
       }
-      return;
+      installing = true;
+      try {
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: "Claude Maia: instalando a extensão Claude Code (Anthropic)…"
+          },
+          async () => {
+            await vscode.commands.executeCommand("workbench.extensions.installExtension", "anthropic.claude-code");
+          }
+        );
+        log("[patch] anthropic.claude-code instalada pelo marketplace");
+      } catch (err) {
+        installing = false;
+        void vscode.window.showWarningMessage(
+          `Claude Maia: não deu pra instalar a Claude Code (${String(err)}). Instale pelo marketplace e rode "Claude Maia: reaplicar patches".`
+        );
+        return;
+      }
+      installing = false;
+      r = applyPatches(log);
+      if (!r.extensionDir) {
+        void vscode.window.showWarningMessage(
+          "Claude Maia: Claude Code instalada, mas a pasta ainda não apareceu; recarregue a janela e os patches entram sozinhos."
+        );
+        return;
+      }
     }
     if (r.failed.length > 0) {
       void vscode.window.showWarningMessage(
