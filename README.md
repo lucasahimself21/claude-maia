@@ -8,8 +8,7 @@ Extensão do VS Code (uso pessoal) que junta o que falta na "Claude Code for VS 
   1. navegador (Claude in Chrome) conecta sozinho em toda mensagem, como se ela tivesse `@browser` (se já estiver conectado, não faz nada);
   2. `Ctx 36% (363k/1000k)` sempre visível no rodapé do chat, cores da status line (200k amarelo, 400k vermelho);
   3. o `Ctx` conta sobre a janela inteira do modelo (1000k), igual à status line, em vez da janela útil antes do auto-compact (923k);
-  4. fonte do chat igual à do terminal integrado (`terminal.integrated.fontFamily`, ou `claudeMaia.chatFontFamily`);
-  5. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
+  4. esconde a barra lateral "Session Manager" da extensão oficial (a lista fica aqui).
      Original guardado em `<arquivo>.orig`; comandos "Claude Maia: reaplicar patches" e "restaurar a extensão original". Se a versão nova mudar o código e um patch não encaixar, avisa em vez de quebrar.
 
 **Instalar**: baixe o `.vsix` da [última release](https://github.com/lucasahimself21/claude-maia/releases/latest) e rode `code --install-extension claude-maia-<versão>.vsix` (ou, no VS Code, Extensions → `...` → Install from VSIX). Precisa da extensão oficial [Claude Code for VS Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) instalada e logada. macOS (o uso do plano lê o token no Keychain).

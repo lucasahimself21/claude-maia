@@ -9,7 +9,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 export interface Patch {
-  readonly id: "autoBrowser" | "contextInChat" | "contextFullWindow" | "chatFont" | "hideSessionManager";
+  readonly id: "autoBrowser" | "contextInChat" | "contextFullWindow" | "hideSessionManager";
   readonly title: string;
   readonly file: "webview/index.js" | "extension.js";
   readonly find: string | RegExp;
@@ -45,21 +45,6 @@ export const PATCHES: readonly Patch[] = [
     find: "contextWindow:$.usageData.value.contextWindow-$.usageData.value.maxOutputTokens-13000,",
     replace: "contextWindow:$.usageData.value.contextWindow/*claude-maia*/,",
     marker: "contextWindow:$.usageData.value.contextWindow/*claude-maia*/,"
-  },
-  {
-    id: "chatFont",
-    title: "fonte do chat = fonte do terminal do VS Code",
-    file: "webview/index.js",
-    find: /^/,
-    replace: () => {
-      const font = chatFont();
-      if (!font) {
-        return "";
-      }
-      const json = JSON.stringify(font);
-      return `/*claude-maia-font*/try{document.documentElement.style.setProperty("--vscode-font-family",${json});document.documentElement.style.setProperty("--vscode-editor-font-family",${json});}catch(_){}\n`;
-    },
-    marker: "/*claude-maia-font*/"
   },
   {
     id: "hideSessionManager",
@@ -108,15 +93,6 @@ export function findClaudeCodeDir(): string | undefined {
     return 0;
   });
   return dirs[0] ? path.join(EXTENSIONS_DIR, dirs[0]) : undefined;
-}
-
-/** Fonte pro chat: claudeMaia.chatFontFamily, ou a do terminal integrado (vazio = não mexe). */
-function chatFont(): string {
-  const own = vscode.workspace.getConfiguration("claudeMaia").get<string>("chatFontFamily", "").trim();
-  if (own) {
-    return own;
-  }
-  return (vscode.workspace.getConfiguration("terminal.integrated").get<string>("fontFamily") ?? "").trim();
 }
 
 function enabledPatches(): readonly Patch[] {
@@ -259,7 +235,7 @@ export function setupAutoPatch(context: vscode.ExtensionContext, log: (msg: stri
   // mudou fonte ou ligou/desligou um patch: reaplica (sempre a partir do .orig)
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("claudeMaia") || e.affectsConfiguration("terminal.integrated.fontFamily")) {
+      if (e.affectsConfiguration("claudeMaia")) {
         void run(false);
       }
     })
