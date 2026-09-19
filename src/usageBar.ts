@@ -1,6 +1,7 @@
 // Uso do plano do Claude na barra inferior, igual à status line do terminal (maia:statusline):
 //   5h 32%/40% (2h51m)  |  7d 46%/57% (3h11m)  = usado/cota do tempo já passado na janela (reset em)
-// Verde enquanto o uso está abaixo da cota, amarelo quando passou. Token OAuth do Claude Code no Keychain.
+// Verde enquanto o uso está abaixo da cota, amarelo quando passou. Token OAuth do Claude Code: Keychain
+// no Mac, ~/.claude/.credentials.json no Windows/Linux (onde o Claude Code guarda o login).
 import { execFile } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
@@ -40,26 +41,41 @@ function readUsageFile(): { at: number; five_hour?: Window; seven_day?: Window }
   }
 }
 
+const CREDENTIALS_FILE = path.join(os.homedir(), ".claude", ".credentials.json");
+
+function parseToken(raw: string): string | null {
+  try {
+    return (JSON.parse(raw.trim()) as { claudeAiOauth?: { accessToken?: string } }).claudeAiOauth?.accessToken ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function keychainToken(): Promise<string | null> {
   return new Promise((resolve) => {
     execFile("security", ["find-generic-password", "-s", "Claude Code-credentials", "-w"], (err, out) => {
-      if (err) {
-        resolve(null);
-        return;
-      }
-      try {
-        resolve(
-          (JSON.parse(out.trim()) as { claudeAiOauth?: { accessToken?: string } }).claudeAiOauth?.accessToken ?? null
-        );
-      } catch {
-        resolve(null);
-      }
+      resolve(err ? null : parseToken(out));
     });
   });
 }
 
+function fileToken(): string | null {
+  try {
+    return parseToken(fs.readFileSync(CREDENTIALS_FILE, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+async function oauthToken(): Promise<string | null> {
+  if (process.platform === "darwin") {
+    return (await keychainToken()) ?? fileToken();
+  }
+  return fileToken();
+}
+
 async function fetchUsage(): Promise<{ five_hour?: Window; seven_day?: Window }> {
-  const token = await keychainToken();
+  const token = await oauthToken();
   if (!token) {
     throw new Error("sem login");
   }

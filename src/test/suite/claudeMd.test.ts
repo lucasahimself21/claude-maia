@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { withBrowserRules, BROWSER_RULES } from "../../claudeMd";
+import { withBrowserRules, browserRules, BROWSER_RULES } from "../../claudeMd";
 
 const START = "<!-- claude-maia:navegador -->";
 const END = "<!-- /claude-maia:navegador -->";
@@ -43,5 +43,24 @@ describe("withBrowserRules", () => {
     const out = withBrowserRules("# Só isso\n")!;
     assert.ok(out.startsWith("# Só isso\n"));
     assert.ok(out.includes("## Navegador e geração\n\n" + START));
+  });
+});
+
+describe("browserRules por sistema", () => {
+  it("Windows não leva comando do Mac", () => {
+    const win = browserRules("win32").join("\n");
+    assert.ok(!win.includes("osascript") && !win.includes("pgrep") && !win.includes("open -gj"));
+    assert.ok(win.includes("Start-Process chrome") && win.includes("clau.de/chrome/reconnect"));
+  });
+
+  it("Mac leva osascript", () => {
+    assert.ok(browserRules("darwin").join("\n").includes("osascript"));
+  });
+
+  it("troca o bloco quando o sistema muda", () => {
+    const md = "## Navegador e geração\n\n" + [START, ...browserRules("darwin"), END].join("\n") + "\n";
+    assert.strictEqual(withBrowserRules(md, "darwin"), undefined);
+    const out = withBrowserRules(md, "win32")!;
+    assert.ok(!out.includes("osascript") && out.includes("Start-Process chrome"));
   });
 });

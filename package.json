@@ -2,7 +2,7 @@
   "name": "claude-maia",
   "displayName": "Claude Maia",
   "description": "Lista plana das sessões do Claude Code (abre no chat da extensão oficial, mostra as abertas), uso do plano (5h/7d) na barra inferior e patches automáticos na extensão Claude Code (navegador automático, Ctx no chat, esconde o Session Manager). Fork de vscode-claude-sessions.",
-  "version": "1.4.29",
+  "version": "1.4.30",
   "publisher": "maia",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -208,7 +208,7 @@
         "claudeMaia.claudeMdRules": {
           "type": "boolean",
           "default": true,
-          "description": "Garante no ~/.claude/CLAUDE.md (bloco entre <!-- claude-maia:navegador -->) as regras do navegador: Claude in Chrome é o padrão, como reconectar sem fechar o Chrome e como tratar as abas. Conferido no mesmo ciclo dos patches."
+          "description": "Garante no ~/.claude/CLAUDE.md (bloco entre <!-- claude-maia:navegador -->) as regras do navegador: Claude in Chrome é o padrão, como reconectar sem fechar o Chrome (comandos do sistema: Mac, Windows ou Linux) e como tratar as abas. Conferido no mesmo ciclo dos patches."
         },
         "claudeMaia.patch.autoBrowser": {
           "type": "boolean",

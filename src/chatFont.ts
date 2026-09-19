@@ -1,6 +1,7 @@
 // Fonte do chat da extensão Claude Code: a própria extensão lê chat.fontFamily/chat.fontSize e
 // chat.editor.fontFamily/fontSize do VS Code (está no HTML da webview dela), então basta gravar
-// essas configurações. A JetBrains Mono a Claude Maia instala pelo Homebrew se faltar (macOS).
+// essas configurações. A JetBrains Mono a Claude Maia instala se faltar: Homebrew no macOS, winget no
+// Windows; no Linux só avisa.
 import { execFile } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
@@ -9,9 +10,26 @@ import * as vscode from "vscode";
 
 const JETBRAINS = "JetBrains Mono";
 const CASK = "font-jetbrains-mono";
+const WINGET_ID = "DEVCOM.JetBrainsMono";
+const MANUAL = "https://www.jetbrains.com/lp/mono/";
+
+function fontDirs(): string[] {
+  const home = os.homedir();
+  switch (process.platform) {
+    case "darwin":
+      return [path.join(home, "Library", "Fonts"), "/Library/Fonts"];
+    case "win32":
+      return [
+        path.join(process.env.LOCALAPPDATA ?? path.join(home, "AppData", "Local"), "Microsoft", "Windows", "Fonts"),
+        path.join(process.env.WINDIR ?? "C:\\Windows", "Fonts")
+      ];
+    default:
+      return [path.join(home, ".local", "share", "fonts"), path.join(home, ".fonts"), "/usr/share/fonts"];
+  }
+}
 
 function fontInstalled(): boolean {
-  for (const dir of [path.join(os.homedir(), "Library", "Fonts"), "/Library/Fonts"]) {
+  for (const dir of fontDirs()) {
     try {
       if (fs.readdirSync(dir).some((f) => f.startsWith("JetBrainsMono"))) {
         return true;
@@ -27,19 +45,40 @@ function brewPath(): string | undefined {
   return ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"].find((p) => fs.existsSync(p));
 }
 
+/** Comando de instalação do sistema, ou undefined se não tem como instalar sozinha. */
+function installer(log: (msg: string) => void): { cmd: string; args: string[] } | undefined {
+  if (process.platform === "darwin") {
+    const brew = brewPath();
+    if (brew) {
+      return { cmd: brew, args: ["install", "--cask", CASK] };
+    }
+    log(`[fonte] JetBrains Mono ausente e sem Homebrew; instale à mão: ${MANUAL}`);
+    return undefined;
+  }
+  if (process.platform === "win32") {
+    return {
+      cmd: "winget",
+      args: ["install", "--id", WINGET_ID, "-e", "--accept-source-agreements", "--accept-package-agreements"]
+    };
+  }
+  log(`[fonte] JetBrains Mono ausente; instale pelo gerenciador do sistema ou à mão: ${MANUAL}`);
+  return undefined;
+}
+
 async function installFont(log: (msg: string) => void): Promise<boolean> {
-  const brew = brewPath();
-  if (!brew) {
-    log("[fonte] JetBrains Mono ausente e sem Homebrew; instale à mão: https://www.jetbrains.com/lp/mono/");
+  const inst = installer(log);
+  if (!inst) {
     return false;
   }
   return vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: "Claude Maia: instalando a fonte JetBrains Mono…" },
     () =>
       new Promise<boolean>((resolve) => {
-        execFile(brew, ["install", "--cask", CASK], { timeout: 180000 }, (err, _out, stderr) => {
+        execFile(inst.cmd, inst.args, { timeout: 180000, shell: process.platform === "win32" }, (err, _out, stderr) => {
           if (err) {
-            log(`[fonte] brew install --cask ${CASK} falhou: ${String(stderr || err.message).trim()}`);
+            log(
+              `[fonte] ${inst.cmd} ${inst.args.join(" ")} falhou: ${String(stderr || err.message).trim()}; à mão: ${MANUAL}`
+            );
             resolve(false);
           } else {
             log("[fonte] JetBrains Mono instalada");
@@ -60,7 +99,7 @@ export function setupChatFont(context: vscode.ExtensionContext, log: (msg: strin
     }
     const family = cfg.get<string>("chatFontFamily", JETBRAINS).trim();
     const size = cfg.get<number>("chatFontSize", 13);
-    if (family === JETBRAINS && process.platform === "darwin" && !fontInstalled() && !installing) {
+    if (family === JETBRAINS && !fontInstalled() && !installing) {
       installing = true;
       try {
         await installFont(log);
