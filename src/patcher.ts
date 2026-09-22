@@ -55,8 +55,11 @@ export const PATCHES: readonly Patch[] = [
     id: "contextFullWindow",
     title: "Ctx conta sobre a janela inteira (1000k), igual à status line",
     file: "webview/index.js",
-    find: /contextWindow:([\w$]+)\.usageData\.value\.contextWindow-\1\.usageData\.value\.maxOutputTokens-13000,/,
-    replace: "contextWindow:$1.usageData.value.contextWindow/*claude-maia*/,",
+    // duas formas já vistas no bundle: o cálculo inline (até 2.1.278) e a função
+    // tW0(contextWindow, maxOutputTokens) que a substituiu na 2.1.280. Só um dos dois
+    // grupos casa; o que não casa vira string vazia no replace.
+    find: /contextWindow:(?:([\w$]+)\.usageData\.value\.contextWindow-\1\.usageData\.value\.maxOutputTokens-13000|[\w$]+\(([\w$]+)\.usageData\.value\.contextWindow,\2\.usageData\.value\.maxOutputTokens\)),/,
+    replace: "contextWindow:$1$2.usageData.value.contextWindow/*claude-maia*/,",
     marker: ".usageData.value.contextWindow/*claude-maia*/,"
   },
   {
