@@ -143,6 +143,14 @@ export class ClaudeTerminalService {
     if (!options.forceTerminal && options.dangerouslySkipPermissions !== true) {
       const live = readLiveSessions().get(session.sessionId);
       const commands = await vscode.commands.getCommands(true);
+      // Aba desta janela sempre ganha o foco (22/09): o `source` vem do `ps` e às vezes diz "terminal" pra uma
+      // sessão que está aberta no chat daqui; antes disso caía no ramo do terminal e só mostrava o aviso de
+      // "já aberta em outra janela" em vez de focar a aba que está na frente do Lucas.
+      if (options.tabOpen && commands.includes("claude-vscode.editor.open")) {
+        this.outputChannel.appendLine(`[ide] Focusing open tab for session ${session.sessionId}.`);
+        await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
+        return;
+      }
       if (commands.includes("claude-vscode.editor.open") && live?.source !== "terminal") {
         this.outputChannel.appendLine(`[ide] Opening session ${session.sessionId} in Claude Code extension.`);
         // mesmos args do atalho Cmd+Shift+0 (só o id): segue o "preferredLocation" da extensão,
@@ -177,6 +185,17 @@ export class ClaudeTerminalService {
       this.outputChannel.appendLine(
         `[terminal] Session ${session.sessionId} running (pid ${String(live.pid)}) but no terminal found in this window.`
       );
+      // roda em outra janela/terminal que não existe aqui: abre (ou foca) o chat nesta janela em vez de só
+      // avisar, que era um beco sem saída pro clique (Lucas, 22/09)
+      const commands = await vscode.commands.getCommands(true);
+      if (commands.includes("claude-vscode.editor.open")) {
+        if (options.tabOpen) {
+          await vscode.commands.executeCommand("claude-vscode.editor.open", session.sessionId);
+        } else {
+          await openChatInNewGroupAtRight(session.sessionId);
+        }
+        return;
+      }
       vscode.window.showInformationMessage("Essa sessão já está aberta em outra janela do VS Code.");
       return;
     }
