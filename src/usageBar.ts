@@ -214,7 +214,9 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
       render(file, "do chat");
       five.show();
       week.show();
-      if (!force && !expired(file)) {
+      // 22/09: dado do chat com mais de 5 min também vale consulta (antes só no reset da janela ou no clique)
+      const stale = Date.now() - file.at > 5 * 60000;
+      if (!force && !expired(file) && !stale) {
         return;
       }
     }
@@ -279,7 +281,7 @@ export function setupUsageBar(context: vscode.ExtensionContext): void {
   );
   // o chat escreveu uso novo: atualiza na hora
   try {
-    fs.watchFile(USAGE_FILE, { interval: 1000 }, () => void refresh());
+    fs.watchFile(USAGE_FILE, { interval: 300 }, () => void refresh());
     context.subscriptions.push({ dispose: () => fs.unwatchFile(USAGE_FILE) });
   } catch {
     // sem watcher: fica o timer

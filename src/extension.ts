@@ -326,7 +326,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       timer = setTimeout(async () => {
         hasRefreshed = true;
         await stateManager.refresh();
-      }, 300);
+      }, 120);
     };
     watcher.onDidCreate(schedule);
     watcher.onDidChange(schedule);
@@ -337,7 +337,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     let liveTimer: ReturnType<typeof setTimeout>;
     const notifyLive = () => {
       clearTimeout(liveTimer);
-      liveTimer = setTimeout(() => stateManager.notifyLive(), 300);
+      liveTimer = setTimeout(() => stateManager.notifyLive(), 120);
     };
     const liveWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(vscode.Uri.file(SESSIONS_DIR), "*.json")
@@ -376,7 +376,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         stateManager.notifyLive();
       }
     };
-    const ideTick = setInterval(pollIde, 3000);
+    const ideTick = setInterval(pollIde, 2000);
     context.subscriptions.push({ dispose: () => clearInterval(ideTick) });
     setTimeout(mapLive, 3000);
     const mapTick = setInterval(mapLive, 10000);

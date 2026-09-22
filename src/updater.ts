@@ -57,8 +57,9 @@ export function setupUpdater(
   let lastCheck = 0;
 
   const check = async (interactive: boolean) => {
-    // GitHub limita 60 consultas/h sem login: no máximo 1 a cada 2 min fora do pedido manual
-    if (!interactive && Date.now() - lastCheck < 120000) {
+    // GitHub limita 60 consultas/h sem login: no máximo 1 a cada 30 s fora do pedido manual (22/09: era 2 min;
+    // com a checagem ao focar a janela, a release nova aparece na primeira volta ao VS Code)
+    if (!interactive && Date.now() - lastCheck < 30000) {
       return;
     }
     lastCheck = Date.now();
@@ -141,6 +142,13 @@ export function setupUpdater(
     )
   );
   setTimeout(() => void check(false), 5000);
-  const tick = setInterval(() => void check(false), 6 * 3600 * 1000);
+  const tick = setInterval(() => void check(false), 3600 * 1000);
+  context.subscriptions.push(
+    vscode.window.onDidChangeWindowState((st) => {
+      if (st.focused) {
+        void check(false);
+      }
+    })
+  );
   context.subscriptions.push({ dispose: () => clearInterval(tick) });
 }
