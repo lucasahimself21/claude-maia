@@ -4,6 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import { SessionNode } from "../models";
+import { ParsedSession } from "./types";
 import { buildTitle } from "./title";
 import {
   CachedContentText,
@@ -17,7 +18,12 @@ import {
 } from "./types";
 import { parseSessionContent } from "../search/parseContent";
 import { collectTranscriptFiles, exists } from "./scan";
-import { parseTranscriptFile, matchWorkspacePrecomputed, precomputeWorkspacePaths } from "./parseSession";
+import {
+  parseTranscriptIncremental,
+  matchWorkspacePrecomputed,
+  precomputeWorkspacePaths,
+  ParseState
+} from "./parseSession";
 import { parseAllUserPrompts } from "./parsePrompts";
 
 const BATCH_CONCURRENCY = 8;
@@ -172,12 +178,20 @@ export class ClaudeSessionDiscoveryService implements ISessionDiscoveryService {
       };
     }
 
-    const parsed = await parseTranscriptFile(file, log);
+    // arquivo mudou: continua do offset guardado (só o trecho novo é lido), em vez de reler tudo
+    let parsed: ParsedSession | null;
+    let state: ParseState;
+    try {
+      ({ parsed, state } = await parseTranscriptIncremental(file, log, cached?.state));
+    } catch (error) {
+      log(`[discovery] read failed for ${file}: ${String(error)}`);
+      return null;
+    }
     if (!parsed) {
       return null;
     }
 
-    this.sessionCacheByPath.set(file, { mtimeMs: stat.mtimeMs, parsed });
+    this.sessionCacheByPath.set(file, { mtimeMs: stat.mtimeMs, parsed, state });
 
     return {
       transcriptPath: file,

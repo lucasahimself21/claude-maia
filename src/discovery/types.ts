@@ -35,6 +35,7 @@ export interface CachedPromptList {
 export interface CachedSessionMeta {
   readonly mtimeMs: number;
   readonly parsed: ParsedSession;
+  readonly state?: import("./parseSession").ParseState;
 }
 
 export interface TranscriptRecord {

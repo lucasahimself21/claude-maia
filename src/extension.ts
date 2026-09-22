@@ -368,7 +368,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     let lastLiveKey = "";
     const pollIde = () => {
       const key = [...readLiveSessions().entries()]
-        .map(([id, i]) => `${id}:${i.source}`)
+        .map(([id, i]) => `${id}:${i.source}:${i.status ?? ""}`)
         .sort()
         .join(",");
       if (key !== lastLiveKey) {
