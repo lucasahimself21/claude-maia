@@ -1,6 +1,6 @@
-// Uso do plano do Claude na barra inferior, igual à status line do terminal (maia:statusline):
+// Uso do plano do Claude na barra inferior, igual à status line do terminal (tools:statusline):
 //   5h 32%/40% (2h51m)  |  7d 46%/57% (3h11m)  = usado/cota do tempo já passado na janela (reset em)
-// Verde enquanto o uso está abaixo da cota, amarelo quando passou. Token OAuth do Claude Code: Keychain
+// Cor pelo uso: verde até 69%, amarelo 70-89%, vermelho a partir de 90% (igual ao Ctx da status line). Token OAuth do Claude Code: Keychain
 // no Mac, ~/.claude/.credentials.json no Windows/Linux (onde o Claude Code guarda o login).
 import { execFile } from "child_process";
 import * as fs from "fs";
@@ -166,7 +166,7 @@ function part(
   }
   return {
     text: `${label} ${String(used)}%/${String(limit)}% (${fmtReset(diff)})`,
-    color: used < limit ? GREEN : YELLOW,
+    color: colorFor(used),
     tooltip: `${String(used)}% usado · cota do tempo já passado ${String(limit)}% · reseta em ${fmtReset(diff)}`
   };
 }
